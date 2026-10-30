@@ -1,0 +1,574 @@
+/* Styles for EventResults and SearchFilters. Class names are prefixed "ev-" so
+   they cannot clash with your global styles. */
+
+/* ---------- Results container ---------- */
+.ev-root,
+.ev-root *,
+.ev-root *::before,
+.ev-root *::after,
+.ev-filters,
+.ev-filters *,
+.ev-filters *::before,
+.ev-filters *::after {
+  box-sizing: border-box;
+}
+
+.ev-root {
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: #fff;
+  color: #172033;
+}
+
+/* ---------- Media (shared by cards and picks) ---------- */
+.ev-media {
+  position: relative; /* required by next/image "fill" */
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.ev-img {
+  object-fit: cover;
+}
+
+.ev-media-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 1.5rem;
+}
+
+.ev-meta {
+  margin: 0;
+  color: #475569;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* ---------- Top picks carousel ---------- */
+.ev-picks {
+  margin-bottom: 1.75rem;
+}
+
+.ev-picks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.ev-picks-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.ev-picks-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ev-picks-controls button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ev-picks-controls button:hover {
+  background: #f1f5f9;
+}
+
+.ev-picks-track {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0 0 0.5rem;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.ev-pick-item {
+  flex: 0 0 min(17rem, 80%);
+  scroll-snap-align: start;
+}
+
+.ev-pick {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow 0.15s;
+}
+
+.ev-pick:hover,
+.ev-pick:focus-visible {
+  box-shadow: 0 8px 24px rgb(15 23 42 / 12%);
+}
+
+.ev-pick .ev-media {
+  width: 100%;
+  height: 9rem;
+}
+
+.ev-pick-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+
+.ev-pick-name {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* ---------- Toolbar (count + sort) ---------- */
+.ev-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ev-count {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.ev-sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.ev-sort select {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #64748b;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+}
+
+/* ---------- Event list ---------- */
+.ev-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ev-card {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background: #fff;
+}
+
+.ev-card .ev-media {
+  width: 9rem;
+  height: 6.5rem;
+  border-radius: 0.5rem;
+}
+
+.ev-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.ev-card-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ev-ticket {
+  align-self: center;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  background: #dc2626;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ev-ticket:hover,
+.ev-ticket:focus-visible {
+  background: #b91c1c;
+}
+
+.ev-error {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ev-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 1.5rem;
+}
+
+.ev-more button {
+  padding: 0.75rem 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ev-more button:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.ev-more button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+@media (max-width: 40rem) {
+  .ev-card {
+    flex-wrap: wrap;
+  }
+
+  .ev-card .ev-media {
+    width: 100%;
+    height: 10rem;
+  }
+
+  .ev-ticket {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ---------- Search filters (date range, category, distance) ---------- */
+.ev-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #172033;
+}
+
+.ev-filter {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 9rem;
+}
+
+.ev-filter span {
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ev-filter input,
+.ev-filter select {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #64748b;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+}
+
+.ev-filter input:focus-visible,
+.ev-filter select:focus-visible,
+.ev-sort select:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.ev-clear {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ev-clear:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+
+/* ---------- Hybrid theme refinement for event results ---------- */
+.ev-root {
+  border: 1px solid rgba(15, 23, 42, .06);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .12);
+}
+.ev-picks-head h3 { letter-spacing: -.025em; }
+.ev-pick { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.ev-pick:hover, .ev-pick:focus-visible {
+  transform: translateY(-2px);
+  border-color: #c4b5fd;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 12%);
+}
+.ev-card {
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.ev-card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 7%);
+}
+.ev-card-name { letter-spacing: -.015em; }
+.ev-ticket {
+  background: #6d4aff;
+  transition: background .18s ease, transform .18s ease;
+}
+.ev-ticket:hover, .ev-ticket:focus-visible {
+  background: #5534d6;
+  transform: translateY(-1px);
+}
+.ev-more button { background: #6d4aff; transition: background .18s ease; }
+.ev-more button:hover:not(:disabled) { background: #5534d6; }
+.ev-filter input:focus-visible, .ev-filter select:focus-visible, .ev-sort select:focus-visible,
+.ev-clear:focus-visible, .ev-more button:focus-visible {
+  outline: 3px solid #8b78ff;
+  outline-offset: 2px;
+}
+@media (max-width: 40rem) {
+  .ev-root { padding: .75rem; border-radius: .9rem; }
+  .ev-toolbar { align-items: stretch; }
+  .ev-sort { justify-content: space-between; }
+  .ev-sort select { max-width: 65%; }
+  .ev-card { padding: .65rem; }
+  .ev-card .ev-media { height: 11rem; }
+  .ev-ticket { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; }
+  .ev-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+  .ev-filter { min-width: 0; }
+  .ev-filter input, .ev-filter select { width: 100%; min-width: 0; font-size: 16px; }
+  .ev-clear { grid-column: 1 / -1; justify-self: start; }
+}
+@media (max-width: 340px) {
+  .ev-filters { grid-template-columns: minmax(0, 1fr); }
+  .ev-clear { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ev-pick, .ev-card, .ev-ticket, .ev-more button { transition: none !important; }
+}
+
+/* ---------- Recurring event/team groups ---------- */
+.ev-card-grouped {
+  align-items: flex-start;
+}
+
+.ev-card-grouped .ev-card-body {
+  justify-content: flex-start;
+  gap: 0.45rem;
+  padding: 0.2rem 0;
+}
+
+.ev-group-dates {
+  margin-top: 0.25rem;
+}
+
+.ev-group-dates summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  color: #6d28d9;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ev-group-dates summary:focus-visible {
+  outline: 3px solid #7c3aed;
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+.ev-date-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ev-date-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ev-date-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ev-date-copy strong {
+  font-size: 0.9rem;
+}
+
+.ev-date-copy span,
+.ev-date-copy small {
+  color: #475569;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.ev-ticket-small {
+  flex-shrink: 0;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 40rem) {
+  .ev-card-grouped {
+    align-items: stretch;
+  }
+
+  .ev-card-grouped .ev-card-body {
+    flex-basis: 100%;
+    order: 2;
+  }
+
+  .ev-card-grouped .ev-media {
+    order: 1;
+  }
+
+  .ev-date-row {
+    align-items: flex-start;
+  }
+
+  .ev-ticket-small {
+    width: auto;
+    text-align: center;
+  }
+}
+
+
+/* ---------- Interactive synchronized map ---------- */
+.ag-map-panel {
+  margin: 1rem 0 1.25rem;
+  overflow: hidden;
+  border: 1px solid #dbe1eb;
+  border-radius: 1rem;
+  background: #f8fafc;
+  color: #172033;
+}
+.ag-map-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1rem;
+}
+.ag-map-heading h3 { margin: 0; font-size: 1rem; }
+.ag-map-heading p { margin: .25rem 0 0; color: #475569; font-size: .8rem; }
+.ag-map-heading button {
+  min-height: 2.5rem;
+  padding: .5rem .85rem;
+  border: 0;
+  border-radius: .65rem;
+  background: #6d4aff;
+  color: white;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ag-map-heading button:hover { background: #5534d6; }
+.ag-map-canvas { width: 100%; height: clamp(280px, 42vw, 480px); background: #e2e8f0; z-index: 0; }
+.ag-map-fallback { display: grid; gap: .4rem; min-height: 200px; padding: 2rem; place-content: center; color: #334155; text-align: center; }
+.ag-map-note, .ag-map-attribution-note { margin: 0; padding: .65rem 1rem; color: #475569; font-size: .75rem; line-height: 1.5; }
+.ag-map-attribution-note { border-top: 1px solid #e2e8f0; background: #fff; }
+.ag-map-marker-wrap { background: transparent; border: 0; }
+.ag-map-marker {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 50% 50% 50% 0;
+  background: #6d4aff;
+  box-shadow: 0 2px 7px #0004;
+  color: white;
+  font-size: 17px;
+  font-weight: 900;
+  transform: rotate(-45deg);
+}
+.ag-map-marker.is-active { background: #e11d48; transform: rotate(-45deg) scale(1.18); }
+.ev-card-selected { border-color: #6d4aff; box-shadow: 0 0 0 3px rgb(109 74 255 / 14%); }
+.ev-show-on-map {
+  align-self: flex-start;
+  padding: .25rem .45rem;
+  border: 1px solid #c4b5fd;
+  border-radius: .4rem;
+  background: #f5f3ff;
+  color: #5b21b6;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ev-map-search-status { margin: .25rem 0 .75rem; color: #5b21b6; font-size: .85rem; }
+@media (max-width: 40rem) {
+  .ag-map-heading { align-items: flex-start; flex-direction: column; }
+  .ag-map-heading button { width: 100%; }
+}

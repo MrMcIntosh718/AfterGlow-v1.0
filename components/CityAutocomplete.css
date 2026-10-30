@@ -1,0 +1,197 @@
+.city-autocomplete {
+  width: 100%;
+  max-width: 32rem;
+  color: #172033;
+}
+
+.city-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.city-input-wrap {
+  position: relative;
+}
+
+.city-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #64748b;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.city-input::placeholder {
+  color: #64748b;
+}
+
+.city-input:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+  border-color: #2563eb;
+}
+
+.city-input:disabled {
+  cursor: not-allowed;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.city-suggestions {
+  position: absolute;
+  inset: calc(100% + 0.5rem) 0 auto;
+  z-index: 50;
+  box-sizing: border-box;
+  max-height: 19rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0.375rem;
+  list-style: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.875rem;
+  background: #fff;
+  box-shadow: 0 12px 32px rgb(15 23 42 / 15%);
+}
+
+.city-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.city-option:hover,
+.city-option-active {
+  background: #eff6ff;
+  color: #1e40af;
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.suggestion-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.suggestion-name {
+  font-weight: 600;
+}
+
+.suggestion-copy small {
+  color: #475569;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.suggestion-pin,
+.suggestion-arrow {
+  flex-shrink: 0;
+  color: #475569;
+}
+
+.city-hint {
+  display: block;
+  margin: 0.625rem 0 0;
+  color: #475569;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keep autocomplete text at a stable, high-contrast color on hover/keyboard focus. */
+.city-option:hover,
+.city-option:focus-visible,
+.city-option-active {
+  color: #172033;
+  background: #eff6ff;
+  outline: 2px solid #93c5fd;
+  outline-offset: -2px;
+}
+.city-option:hover .suggestion-name,
+.city-option:focus-visible .suggestion-name,
+.city-option-active .suggestion-name {
+  color: #172033;
+}
+.city-option:hover .suggestion-copy small,
+.city-option:focus-visible .suggestion-copy small,
+.city-option-active .suggestion-copy small {
+  color: #475569;
+}
+
+
+/* Afterglow dark theme: preserve readable suggestion text on hover and keyboard focus.
+   Scoped specificity intentionally wins over the generic .city-suggestions rules in globals.css. */
+.city-autocomplete .city-suggestions {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #151627;
+  color: #f6f7fb;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.42);
+}
+
+.city-autocomplete .city-suggestions .city-option {
+  color: #f6f7fb;
+  background: transparent;
+  outline: none;
+}
+
+.city-autocomplete .city-suggestions .city-option:hover,
+.city-autocomplete .city-suggestions .city-option:focus-visible,
+.city-autocomplete .city-suggestions .city-option-active {
+  color: #ffffff;
+  background: #39305f;
+  outline: 2px solid #a992ff;
+  outline-offset: -2px;
+}
+
+.city-autocomplete .city-suggestions .suggestion-name {
+  color: #ffffff;
+}
+
+.city-autocomplete .city-suggestions .suggestion-copy small {
+  color: #c6c8da;
+}
+
+.city-autocomplete .city-suggestions .city-option:hover .suggestion-copy small,
+.city-autocomplete .city-suggestions .city-option:focus-visible .suggestion-copy small,
+.city-autocomplete .city-suggestions .city-option-active .suggestion-copy small {
+  color: #e2e4f2;
+}
+
+.city-autocomplete .city-suggestions .suggestion-pin {
+  color: #7ce7ed;
+}
+
+.city-autocomplete .city-suggestions .suggestion-arrow {
+  color: #c6c8da;
+}
