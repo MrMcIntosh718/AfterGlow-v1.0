@@ -1,5 +1,7 @@
 import React from 'react';
-import { Sparkles, Calendar, Ticket, Users, PlusCircle, Search } from 'lucide-react';
+import { Sparkles, Calendar, Ticket, Users, PlusCircle } from 'lucide-react';
+import { SearchAutocomplete } from './SearchAutocomplete';
+import { EventItem } from '../types';
 
 interface NavbarProps {
   activeTab: 'aggregator' | 'itinerary' | 'expenses' | 'passes';
@@ -8,6 +10,9 @@ interface NavbarProps {
   passesCount: number;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  events?: EventItem[];
+  isTicketmasterConnected?: boolean;
+  isSearchingTicketmaster?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,6 +22,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   passesCount,
   searchQuery,
   setSearchQuery,
+  events = [],
+  isTicketmasterConnected = false,
+  isSearchingTicketmaster = false,
 }) => {
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#0b0d14]/85 border-b border-slate-800/80 transition-all">
@@ -48,26 +56,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Quick Search bar (visible in aggregator tab) */}
+          {/* Quick Search bar with Autocomplete (desktop) */}
           <div className="hidden md:flex flex-1 max-w-md mx-2">
-            <div className="relative w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search artists, festivals, NYC, LA, techno, pop..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-900/80 text-sm text-slate-100 placeholder-slate-500 rounded-xl border border-slate-700/60 focus:outline-none focus:border-rose-500/70 focus:ring-1 focus:ring-rose-500/40 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+            <SearchAutocomplete
+              searchQuery={searchQuery}
+              setSearchQuery={(q) => {
+                setSearchQuery(q);
+                if (activeTab !== 'aggregator') {
+                  setActiveTab('aggregator');
+                }
+              }}
+              events={events}
+              onSelectSuggestion={(val) => {
+                setSearchQuery(val);
+                if (activeTab !== 'aggregator') {
+                  setActiveTab('aggregator');
+                }
+              }}
+              isTicketmasterConnected={isTicketmasterConnected}
+              isSearchingTicketmaster={isSearchingTicketmaster}
+              placeholder="Search by artist, venue, city, state, or ZIP..."
+            />
           </div>
 
           {/* Navigation Links */}
@@ -139,18 +148,27 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         </div>
         
-        {/* Mobile search bar */}
+        {/* Mobile search bar with Autocomplete */}
         <div className="md:hidden pb-3">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search artists, festivals, NYC, LA..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-900 text-xs text-slate-100 placeholder-slate-500 rounded-xl border border-slate-700 focus:outline-none focus:border-rose-500"
-            />
-          </div>
+          <SearchAutocomplete
+            searchQuery={searchQuery}
+            setSearchQuery={(q) => {
+              setSearchQuery(q);
+              if (activeTab !== 'aggregator') {
+                setActiveTab('aggregator');
+              }
+            }}
+            events={events}
+            onSelectSuggestion={(val) => {
+              setSearchQuery(val);
+              if (activeTab !== 'aggregator') {
+                setActiveTab('aggregator');
+              }
+            }}
+            isTicketmasterConnected={isTicketmasterConnected}
+            isSearchingTicketmaster={isSearchingTicketmaster}
+            placeholder="Search artists, venues, or ZIP codes..."
+          />
         </div>
 
       </div>

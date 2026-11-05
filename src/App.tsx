@@ -10,6 +10,7 @@ import { HostEventModal } from './components/HostEventModal';
 import { INITIAL_EVENTS } from './data/mockEvents';
 import { EventItem, EventItinerary, UserPass } from './types';
 import { Sparkles, Heart } from 'lucide-react';
+import { checkTicketmasterStatus, fetchTicketmasterEvents } from './services/ticketmaster';
 
 const INITIAL_ITINERARY: EventItinerary = {
   id: 'plan-mirage-fest',
@@ -89,6 +90,33 @@ export function App() {
   const [detailModalEvent, setDetailModalEvent] = useState<EventItem | null>(null);
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isTicketmasterConnected, setIsTicketmasterConnected] = useState(false);
+  const [isSearchingTicketmaster, setIsSearchingTicketmaster] = useState(false);
+
+  // Check Ticketmaster API connectivity on startup
+  useEffect(() => {
+    let isMounted = true;
+    checkTicketmasterStatus().then((status) => {
+      if (isMounted) {
+        setIsTicketmasterConnected(status.connected);
+        if (status.connected) {
+          showToast('Ticketmaster Discovery API v2 connected! Live inventory active.');
+          setIsSearchingTicketmaster(true);
+          fetchTicketmasterEvents({ size: '10' }).then((res) => {
+            if (isMounted && res.success && res.events.length > 0) {
+              setEvents((prev) => {
+                const existingIds = new Set(prev.map((e) => e.id));
+                const newOnes = res.events.filter((e) => !existingIds.has(e.id));
+                return [...newOnes, ...prev];
+              });
+            }
+            if (isMounted) setIsSearchingTicketmaster(false);
+          });
+        }
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('afterglow_events', JSON.stringify(events));
@@ -105,6 +133,32 @@ export function App() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleRefreshTicketmaster = async () => {
+    setIsSearchingTicketmaster(true);
+    showToast('Checking Ticketmaster Discovery API for live events & ZIP matches...');
+    
+    const trimmed = searchQuery.trim();
+    const isZip = /^\d{5}$/.test(trimmed);
+    const res = await fetchTicketmasterEvents({
+      postalCode: isZip ? trimmed : undefined,
+      keyword: !isZip && trimmed ? trimmed : undefined,
+    });
+
+    setIsSearchingTicketmaster(false);
+    if (res.success && res.events.length > 0) {
+      setEvents((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id));
+        const newOnes = res.events.filter((e) => !existingIds.has(e.id));
+        return [...newOnes, ...prev];
+      });
+      showToast(`Loaded ${res.events.length} live Ticketmaster events!`);
+    } else if (!isTicketmasterConnected) {
+      showToast('Ticketmaster API ready in aggregator mode. Configured via TICKETMASTER_API_KEY.');
+    } else {
+      showToast('Ticketmaster query finished — catalogue up to date.');
+    }
   };
 
   const handleTicketPurchased = (newPass: UserPass) => {
@@ -195,6 +249,9 @@ export function App() {
         passesCount={passes.length}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        events={events}
+        isTicketmasterConnected={isTicketmasterConnected}
+        isSearchingTicketmaster={isSearchingTicketmaster}
       />
 
       {/* Main View Area */}
@@ -209,6 +266,9 @@ export function App() {
             onAddToPlanner={handleAddToPlanner}
             onTogglePriceAlert={handleTogglePriceAlert}
             itineraryEventIds={itineraryEventIds}
+            isTicketmasterConnected={isTicketmasterConnected}
+            isSearchingTicketmaster={isSearchingTicketmaster}
+            onRefreshTicketmaster={handleRefreshTicketmaster}
           />
         )}
 

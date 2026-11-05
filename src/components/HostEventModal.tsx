@@ -20,6 +20,7 @@ export const HostEventModal: React.FC<HostEventModalProps> = ({
   const [venue, setVenue] = useState('');
   const [city, setCity] = useState('New York');
   const [state, setState] = useState('NY');
+  const [postalCode, setPostalCode] = useState('10001');
   const [date, setDate] = useState('2026-07-18');
   const [time, setTime] = useState('10:00 PM - 4:00 AM');
   const [doorsOpen, setDoorsOpen] = useState('9:30 PM');
@@ -53,6 +54,7 @@ export const HostEventModal: React.FC<HostEventModalProps> = ({
       venue: venue.trim(),
       city: city.trim(),
       state: state.trim(),
+      postalCode: postalCode.trim() || '10001',
       date,
       formattedDate,
       time,
@@ -234,6 +236,17 @@ export const HostEventModal: React.FC<HostEventModalProps> = ({
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 placeholder="e.g. NY"
+                className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">ZIP / Postal Code</label>
+              <input
+                type="text"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                placeholder="e.g. 10001"
                 className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
               />
             </div>

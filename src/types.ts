@@ -44,6 +44,7 @@ export interface EventItem {
   venue: string;
   city: string;
   state: string;
+  postalCode: string; // ZIP / Postal code e.g. '10001', '78701'
   date: string; // YYYY-MM-DD
   formattedDate: string;
   time: string;
@@ -58,6 +59,7 @@ export interface EventItem {
   tags: string[];
   ticketPlatforms: PlatformListing[];
   isCustomHostEvent?: boolean;
+  isTicketmasterLive?: boolean;
 }
 
 export interface ItineraryScheduleItem {

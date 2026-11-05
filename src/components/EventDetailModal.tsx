@@ -96,8 +96,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             <div className="flex items-center gap-2.5 col-span-2 sm:col-span-1">
               <MapPin className="w-4 h-4 text-cyan-400 shrink-0" />
               <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Venue</p>
-                <p className="text-xs sm:text-sm font-medium text-slate-200">{event.venue}, {event.city}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Venue & Location</p>
+                <p className="text-xs sm:text-sm font-medium text-slate-200">
+                  {event.venue}, {event.city}, {event.state} {event.postalCode ? `(${event.postalCode})` : ''}
+                </p>
               </div>
             </div>
           </div>

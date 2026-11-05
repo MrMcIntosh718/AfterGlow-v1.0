@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, MapPin, Calendar, Clock, Star, Bell, BellOff, 
-  ArrowUpDown, ShieldCheck, Ticket, PlusCircle, Check, Sparkles, ChevronRight, Zap
+  ArrowUpDown, ShieldCheck, Ticket, PlusCircle, Check, Sparkles, ChevronRight, Zap, RefreshCw, Hash
 } from 'lucide-react';
 import { EventItem, CategoryType } from '../types';
+import { SearchAutocomplete } from './SearchAutocomplete';
 
 interface TicketAggregatorProps {
   events: EventItem[];
@@ -14,6 +15,9 @@ interface TicketAggregatorProps {
   onAddToPlanner: (event: EventItem) => void;
   onTogglePriceAlert: (eventId: string) => void;
   itineraryEventIds: string[];
+  isTicketmasterConnected?: boolean;
+  isSearchingTicketmaster?: boolean;
+  onRefreshTicketmaster?: () => void;
 }
 
 export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
@@ -25,6 +29,9 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
   onAddToPlanner,
   onTogglePriceAlert,
   itineraryEventIds,
+  isTicketmasterConnected = false,
+  isSearchingTicketmaster = false,
+  onRefreshTicketmaster,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedCity, setSelectedCity] = useState<string>('All');
@@ -33,9 +40,48 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
 
   const categories = ['All', 'EDM / Festival', 'Concert', 'Nightlife', 'Sports', 'Comedy', 'Theater'];
 
+  // State abbreviation to full name dictionary
+  const STATE_NAMES: Record<string, string> = {
+    ny: 'new york',
+    ca: 'california',
+    il: 'illinois',
+    tx: 'texas',
+    co: 'colorado',
+    fl: 'florida',
+    wa: 'washington',
+    nv: 'nevada',
+    ga: 'georgia',
+    tn: 'tennessee',
+    ma: 'massachusetts',
+    pa: 'pennsylvania',
+    az: 'arizona',
+  };
+
+  // Common city & metro aliases for seamless searching
+  const METRO_ALIASES: Record<string, string[]> = {
+    'new york': ['nyc', 'new york city', 'brooklyn', 'manhattan', 'queens', 'ny'],
+    'los angeles': ['la', 'hollywood', 'socal', 'inglewood', 'california', 'ca'],
+    'chicago': ['chi', 'chitown', 'windy city', 'illinois', 'il'],
+    'austin': ['atx', 'texas', 'tx'],
+    'morrison': ['denver', 'colorado', 'red rocks', 'co'],
+  };
+
   const cities = useMemo(() => {
-    const list = Array.from(new Set(events.map((e) => e.city)));
-    return ['All', ...list];
+    // Unique list of { city, state }
+    const map = new Map<string, string>();
+    events.forEach((e) => {
+      if (!map.has(e.city)) {
+        map.set(e.city, e.state);
+      }
+    });
+    return [
+      { city: 'All', state: '', label: 'All Locations' },
+      ...Array.from(map.entries()).map(([city, state]) => ({
+        city,
+        state,
+        label: `${city}, ${state}`,
+      })),
+    ];
   }, [events]);
 
   // Compute lowest price helper
@@ -49,21 +95,88 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
     return events.filter((e) => {
       // Category filter
       if (selectedCategory !== 'All' && e.category !== selectedCategory) return false;
-      // City filter
-      if (selectedCity !== 'All' && e.city !== selectedCity) return false;
+
       // Max price filter
       const minPrice = getMinPrice(e);
       if (minPrice > maxPrice) return false;
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesTitle = e.title.toLowerCase().includes(q);
-        const matchesArtist = e.artistOrPerformer.toLowerCase().includes(q);
-        const matchesVenue = e.venue.toLowerCase().includes(q);
-        const matchesCity = e.city.toLowerCase().includes(q);
-        const matchesTags = e.tags.some((t) => t.toLowerCase().includes(q));
-        if (!matchesTitle && !matchesArtist && !matchesVenue && !matchesCity && !matchesTags) return false;
+
+      // Cleaned search query
+      const trimmedQuery = searchQuery.trim().toLowerCase();
+
+      // City filter dropdown:
+      // If user typed a search query that matches this event's city/state/ZIP, don't let a stale dropdown filter block it
+      if (selectedCity !== 'All') {
+        const queryMatchesEventLocation = trimmedQuery && (
+          e.city.toLowerCase().includes(trimmedQuery) ||
+          e.state.toLowerCase() === trimmedQuery ||
+          (e.postalCode && e.postalCode.includes(trimmedQuery)) ||
+          (STATE_NAMES[e.state.toLowerCase()] && STATE_NAMES[e.state.toLowerCase()].includes(trimmedQuery))
+        );
+        if (e.city !== selectedCity && !queryMatchesEventLocation) {
+          return false;
+        }
       }
+
+      // Search query filter (matches artist, title, venue, city, state abbreviation, full state name, ZIP code, combined "city, state", tags, description)
+      if (trimmedQuery) {
+        const fullStateName = STATE_NAMES[e.state.toLowerCase()] || '';
+        const aliases = (METRO_ALIASES[e.city.toLowerCase()] || []).join(' ');
+
+        // Comprehensive searchable document including ZIP code
+        const searchableHaystack = [
+          e.title,
+          e.artistOrPerformer,
+          e.venue,
+          e.city,
+          e.state,
+          e.postalCode,
+          `zip ${e.postalCode}`,
+          `${e.city} ${e.postalCode}`,
+          `${e.city}, ${e.state} ${e.postalCode}`,
+          fullStateName,
+          `${e.city}, ${e.state}`,
+          `${e.city} ${e.state}`,
+          `${e.city}, ${fullStateName}`,
+          `${e.city} ${fullStateName}`,
+          aliases,
+          e.category,
+          e.description,
+          ...e.tags,
+          ...e.lineup.map((l) => `${l.act} ${l.stage || ''}`),
+        ].join(' ').toLowerCase();
+
+        // 1. Direct match check (e.g. "10001", "78701", "new york, ny", "austin, tx", "red rocks", "ca", "ny")
+        if (searchableHaystack.includes(trimmedQuery)) {
+          return true;
+        }
+
+        // 2. Tokenized multi-word search (e.g. "Austin TX 78701", "techno Chicago 60616", "New York concert 10001")
+        const tokens = trimmedQuery.split(/[\s,.-]+/).filter(Boolean);
+        const allTokensMatch = tokens.length > 0 && tokens.every((token) => {
+          if (searchableHaystack.includes(token)) return true;
+
+          // Check if token matches ZIP code prefix or full ZIP
+          if (e.postalCode && (e.postalCode.startsWith(token) || e.postalCode.includes(token))) {
+            return true;
+          }
+
+          // If token corresponds to a state name or state abbreviation
+          const stateEntry = Object.entries(STATE_NAMES).find(
+            ([abbr, full]) => abbr === token || full === token || full.startsWith(token)
+          );
+          if (stateEntry) {
+            const [abbr, full] = stateEntry;
+            if (e.state.toLowerCase() === abbr || fullStateName.includes(token)) {
+              return true;
+            }
+          }
+
+          return false;
+        });
+
+        if (!allTokensMatch) return false;
+      }
+
       return true;
     }).sort((a, b) => {
       if (sortBy === 'price-asc') {
@@ -150,9 +263,9 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                 onChange={(e) => setSelectedCity(e.target.value)}
                 className="bg-slate-800 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-1.5 border border-slate-700 focus:outline-none focus:border-rose-500"
               >
-                {cities.map((city) => (
-                  <option key={city} value={city}>
-                    {city === 'All' ? 'All Locations' : city}
+                {cities.map((item) => (
+                  <option key={item.city} value={item.city}>
+                    {item.label}
                   </option>
                 ))}
               </select>
@@ -195,12 +308,94 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
         </div>
       </div>
 
-      {/* Events Results Count */}
-      <div className="flex items-center justify-between text-xs text-slate-400">
-        <span>Showing <b className="text-white">{filteredEvents.length}</b> live aggregated events</span>
-        {searchQuery && (
-          <span>Filtering for "{searchQuery}"</span>
-        )}
+      {/* Search Bar with Autocomplete & Ticketmaster Live Bridge */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex-1 max-w-2xl">
+            <SearchAutocomplete
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              events={events}
+              onSelectSuggestion={(val) => setSearchQuery(val)}
+              isTicketmasterConnected={isTicketmasterConnected}
+              isSearchingTicketmaster={isSearchingTicketmaster}
+              placeholder="Search by artist, venue, city, state, or 5-digit ZIP code (e.g. 10001, 78701)..."
+            />
+          </div>
+
+          {/* Ticketmaster Live API Connection Status Badge */}
+          <div className="flex items-center gap-2 p-2 px-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shrink-0">
+            <div className={`w-2 h-2 rounded-full ${isTicketmasterConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+            <span className="font-semibold text-slate-200">
+              {isTicketmasterConnected ? 'Ticketmaster API Connected' : 'Ticketmaster Discovery API Ready'}
+            </span>
+            {onRefreshTicketmaster && (
+              <button
+                onClick={onRefreshTicketmaster}
+                disabled={isSearchingTicketmaster}
+                className="ml-1 p-1 hover:text-white text-slate-400 hover:bg-slate-800 rounded transition-all"
+                title="Sync Ticketmaster Live Events"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSearchingTicketmaster ? 'animate-spin text-rose-400' : ''}`} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Quick ZIP Codes and Locations bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400 pt-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mr-1 flex items-center gap-1">
+              <Hash className="w-3 h-3 text-emerald-400" />
+              Quick ZIPs & Hubs:
+            </span>
+            {[
+              { label: 'ZIP 10001 (NYC)', q: '10001' },
+              { label: 'ZIP 78701 (Austin)', q: '78701' },
+              { label: 'ZIP 90071 (LA)', q: '90071' },
+              { label: 'ZIP 60616 (Chicago)', q: '60616' },
+              { label: 'ZIP 80465 (Red Rocks)', q: '80465' },
+              { label: 'ZIP 11237 (Mirage)', q: '11237' },
+              { label: 'New York, NY', q: 'New York, NY' },
+              { label: 'Austin, TX', q: 'Austin, TX' },
+              { label: 'Los Angeles, CA', q: 'Los Angeles, CA' },
+            ].map((loc) => {
+              const isActive = searchQuery.toLowerCase() === loc.q.toLowerCase();
+              return (
+                <button
+                  key={loc.label}
+                  onClick={() => {
+                    setSearchQuery(loc.q);
+                    setSelectedCity('All');
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
+                    isActive
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
+                      : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+                  }`}
+                >
+                  {loc.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span>Showing <b className="text-white">{filteredEvents.length}</b> events</span>
+            {searchQuery && (
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px]">
+                <span>"{searchQuery}"</span>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="hover:text-white font-bold ml-0.5"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Events Grid */}
@@ -251,10 +446,15 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0f121d] via-[#0f121d]/30 to-black/40" />
 
                   {/* Category Pill */}
-                  <div className="absolute top-3 left-3 flex gap-2">
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                     <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-rose-500/90 text-white backdrop-blur">
                       {event.category}
                     </span>
+                    {event.isTicketmasterLive && (
+                      <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-blue-600/95 text-white backdrop-blur flex items-center gap-1 shadow-md">
+                        <Ticket className="w-3 h-3" /> Ticketmaster Live
+                      </span>
+                    )}
                     {event.isCustomHostEvent && (
                       <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-amber-500/90 text-slate-950 backdrop-blur">
                         Host Listed
@@ -312,7 +512,12 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                       </div>
                       <div className="flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span className="truncate">{event.venue}, {event.city}</span>
+                        <span className="truncate">{event.venue}, {event.city}, {event.state}</span>
+                        {event.postalCode && (
+                          <span className="ml-auto font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
+                            ZIP {event.postalCode}
+                          </span>
+                        )}
                       </div>
                     </div>
 
