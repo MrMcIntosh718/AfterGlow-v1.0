@@ -1,0 +1,8 @@
+{
+  "name": "AfterGlow v1.0",
+  "description": "Event Planner and Multi-Platform Ticket Aggregator for discovering, planning, and comparing prices across live concerts, festivals, nightlife, and shows.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
