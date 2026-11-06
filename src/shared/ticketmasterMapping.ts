@@ -26,6 +26,53 @@ export function clampPageSize(
   return String(Math.min(parsed, max));
 }
 
+const US_STATE_CODES: Record<string, string> = {
+  alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA', colorado: 'CO',
+  connecticut: 'CT', delaware: 'DE', florida: 'FL', georgia: 'GA', hawaii: 'HI', idaho: 'ID',
+  illinois: 'IL', indiana: 'IN', iowa: 'IA', kansas: 'KS', kentucky: 'KY', louisiana: 'LA',
+  maine: 'ME', maryland: 'MD', massachusetts: 'MA', michigan: 'MI', minnesota: 'MN',
+  mississippi: 'MS', missouri: 'MO', montana: 'MT', nebraska: 'NE', nevada: 'NV',
+  'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+  'north carolina': 'NC', 'north dakota': 'ND', ohio: 'OH', oklahoma: 'OK', oregon: 'OR',
+  pennsylvania: 'PA', 'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD',
+  tennessee: 'TN', texas: 'TX', utah: 'UT', vermont: 'VT', virginia: 'VA', washington: 'WA',
+  'west virginia': 'WV', wisconsin: 'WI', wyoming: 'WY',
+};
+const VALID_STATE_CODES = new Set(Object.values(US_STATE_CODES));
+
+/** Interpret common location searches so Ticketmaster gets a location filter instead of a keyword. */
+export function parseTicketmasterSearch(query: string): { keyword?: string; postalCode?: string; city?: string; stateCode?: string } {
+  const trimmed = query.trim();
+  if (/^\d{5}$/.test(trimmed)) return { postalCode: trimmed };
+
+  const commaParts = trimmed.split(',').map((part) => part.trim()).filter(Boolean);
+  if (commaParts.length === 2) {
+    const city = commaParts[0];
+    const stateInput = commaParts[1].toLowerCase();
+    const stateCode = stateInput.length === 2 && VALID_STATE_CODES.has(stateInput.toUpperCase())
+      ? stateInput.toUpperCase()
+      : US_STATE_CODES[stateInput];
+    if (stateCode && city) return { city, stateCode };
+  }
+
+  const parts = trimmed.split(/\s+/);
+  const last = parts[parts.length - 1]?.toUpperCase();
+  if (parts.length > 1 && last && VALID_STATE_CODES.has(last)) {
+    return { city: parts.slice(0, -1).join(' '), stateCode: last };
+  }
+
+  const normalized = trimmed.toLowerCase();
+  for (const [stateName, stateCode] of Object.entries(US_STATE_CODES).sort((a, b) => b[0].length - a[0].length)) {
+    const suffix = ` ${stateName}`;
+    if (normalized.endsWith(suffix)) {
+      const city = trimmed.slice(0, -suffix.length).trim();
+      if (city) return { city, stateCode };
+    }
+  }
+
+  return trimmed ? { keyword: trimmed } : {};
+}
+
 /**
  * Map a Ticketmaster classification (segment + genre names) to an AfterGlow category.
  *
