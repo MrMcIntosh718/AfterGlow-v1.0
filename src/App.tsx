@@ -157,7 +157,7 @@ export function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleRefreshTicketmaster = async (query = searchQuery, page = 0) => {
+  const handleRefreshTicketmaster = async (query = searchQuery, page = 0, radius = 25) => {
     setIsSearchingTicketmaster(true);
     const trimmed = query.trim();
     showToast(trimmed ? `Searching upcoming events for “${trimmed}”…` : 'Loading upcoming live events…');
@@ -165,6 +165,7 @@ export function App() {
       ...parseTicketmasterSearch(trimmed),
       size: '20',
       page,
+      radius,
     });
 
     setIsSearchingTicketmaster(false);
@@ -309,8 +310,8 @@ export function App() {
             isTicketmasterConnected={isTicketmasterConnected}
             isSearchingTicketmaster={isSearchingTicketmaster}
             onRefreshTicketmaster={handleRefreshTicketmaster}
-            onSubmitSearch={(query) => handleRefreshTicketmaster(query, 0)}
-            onLoadMore={() => handleRefreshTicketmaster(searchQuery, ticketmasterPage + 1)}
+            onSubmitSearch={(query, radius) => handleRefreshTicketmaster(query, 0, radius)}
+            onLoadMore={(radius) => handleRefreshTicketmaster(searchQuery, ticketmasterPage + 1, radius)}
             hasMoreTicketmasterEvents={ticketmasterPage + 1 < ticketmasterTotalPages}
           />
         )}
