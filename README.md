@@ -1,61 +1,40 @@
 # Afterglow
 
-Afterglow helps people discover live events and plan road trips around them. It is built with Next.js, React, and TypeScript.
+Afterglow is intended to help people discover live events and plan road trips around them. The repository currently contains both a Next.js App Router implementation and a legacy Express/Vite runtime. **The runtime has not yet been consolidated.** See [`AUDIT_REPORT.md`](./AUDIT_REPORT.md) for verified findings and the migration sequence.
 
-## Features
+## Current framework status
 
-- Search Ticketmaster events by keyword, city, date range, and category
-- Browse event locations on an interactive map
-- Build multi-city road trip itineraries and calculate driving legs
-- Send ticket clicks through a partner-domain-validated redirect
+- Next.js App Router source exists under `app/` with API routes.
+- The current `package.json` scripts still run the legacy Express/Vite app (`tsx server.ts`, `vite build`).
+- `package.json` does not currently declare Next.js. Therefore, the README must not be interpreted as evidence that Next.js is presently the production runtime.
+- Recommended canonical framework: **Next.js**, after dependencies, routes, environment variables, and production build are migrated and validated.
 
-## Requirements
+## Features represented in the repository
 
-- Node.js 20.9 or later (required by Next.js 16)
-- npm
-- A Ticketmaster Discovery API key
+- Ticketmaster event search
+- Event location/map and road-trip code paths
+- Partner-domain-validated ticket redirect
 
-Mapbox is optional for location autocomplete, radius searches, and route calculations. See `.env.example` for all supported environment variables.
+Availability, prices, fees, ratings, inventory, and marketplace comparisons must come from verified providers. Legacy/demo values are not live provider data and should not be presented as real listings.
 
-## Setup
+## Requirements and setup
+
+The active runtime is still the legacy Express/Vite setup until the framework migration is completed. Use the package scripts as they exist in the checked-out branch and do not assume Next.js commands are available. The Next.js source is not yet validated as a standalone production deployment.
 
 ```bash
 npm install
 Copy-Item .env.example .env.local
 ```
 
-Add your API keys to `.env.local`. Keep this file private; it is ignored by Git. Then start the development server:
+Keep `.env.local` private and out of Git. Configure only credentials for integrations that are implemented and enabled. The current event search is Ticketmaster-backed; Google Places, flight, and PassKit code/configuration should be considered templates unless their active path is verified.
 
-```bash
-npm run dev
-```
+## Validation
 
-Open [http://localhost:3000](http://localhost:3000).
+No local install, typecheck, lint, production build, or API smoke test has been run as part of the GitHub-only audit. Do not treat this branch's audit as a successful runtime validation. See `AUDIT_REPORT.md` for evidence paths and required follow-up.
 
-## Available commands
+## Security
 
-```bash
-npm run dev        # Start the local development server
-npm run typecheck  # Check TypeScript types
-npm run build      # Create a production build
-npm start          # Serve the production build
-```
-
-## Environment variables
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `TICKETMASTER_API_KEY` | Yes | Event search |
-| `MAPBOX_ACCESS_TOKEN` | No | Server-side geocoding and route calculations |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | No | Browser-visible Mapbox token fallback; restrict it by URL in Mapbox settings |
-| `GOOGLE_MAPS_API_KEY` | No | Optional Places integrations |
-| `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET` | No | Flight integration template; not connected to the current search flow |
-| `PASSKIT_CLIENT_ID`, `PASSKIT_CLIENT_SECRET` | No | PassKit integration template; not connected to the current search flow |
-
-Affiliate template variables are optional. Without them, approved partner links go directly to the ticket provider.
-
-## Notes
-
-- Rate limiting currently uses process memory. For multi-instance or serverless production deployments, use a shared rate-limit store and configure trusted client IP handling at the hosting proxy.
-- The app does not include a database; road trip plans are kept in the browser session.
-- Do not commit `.env.local` or other files containing credentials.
+- Never commit `.env.local`, API keys, or other secrets.
+- Restrict browser-visible Mapbox tokens by origin in the provider dashboard.
+- For multi-instance/serverless deployment, replace process-local rate limiting with a shared store and configure trusted client IP handling at the hosting proxy.
+- The repository has no database-backed persistence; road-trip state is client-side/session-oriented.
