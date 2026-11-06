@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, MapPin, Calendar, Clock, Star, Bell, BellOff, 
-  ArrowUpDown, ShieldCheck, Ticket, PlusCircle, Check, Sparkles, ChevronRight, Zap, RefreshCw, Hash
+  ArrowUpDown, ShieldCheck, Ticket, PlusCircle, Check, Sparkles, ChevronRight, Zap, RefreshCw, Hash, Heart
 } from 'lucide-react';
 import { EventItem, CategoryType } from '../types';
 import { SearchAutocomplete } from './SearchAutocomplete';
@@ -14,6 +14,8 @@ interface TicketAggregatorProps {
   onOpenDetailModal: (event: EventItem) => void;
   onAddToPlanner: (event: EventItem) => void;
   onTogglePriceAlert: (eventId: string) => void;
+  savedEventIds: string[];
+  onToggleSaved: (eventId: string) => void;
   itineraryEventIds: string[];
   isTicketmasterConnected?: boolean;
   isSearchingTicketmaster?: boolean;
@@ -28,6 +30,8 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
   onOpenDetailModal,
   onAddToPlanner,
   onTogglePriceAlert,
+  savedEventIds,
+  onToggleSaved,
   itineraryEventIds,
   isTicketmasterConnected = false,
   isSearchingTicketmaster = false,
@@ -37,6 +41,11 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [maxPrice, setMaxPrice] = useState<number>(350);
   const [sortBy, setSortBy] = useState<'deal' | 'price-asc' | 'date' | 'rating'>('deal');
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+
+  const savedSet = useMemo(() => new Set(savedEventIds), [savedEventIds]);
+  // Count only saved events that still exist in the catalogue.
+  const savedCount = useMemo(() => events.filter((e) => savedSet.has(e.id)).length, [events, savedSet]);
 
   const categories = ['All', 'EDM / Festival', 'Concert', 'Nightlife', 'Sports', 'Comedy', 'Theater'];
 
@@ -95,6 +104,9 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
     return events.filter((e) => {
       // Category filter
       if (selectedCategory !== 'All' && e.category !== selectedCategory) return false;
+
+      // Saved-only filter
+      if (showSavedOnly && !savedSet.has(e.id)) return false;
 
       // Max price filter
       const minPrice = getMinPrice(e);
@@ -191,7 +203,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
       // 'deal' default: combination of rating and price
       return (b.rating * 100 - getMinPrice(b)) - (a.rating * 100 - getMinPrice(a));
     });
-  }, [events, selectedCategory, selectedCity, maxPrice, searchQuery, sortBy]);
+  }, [events, selectedCategory, selectedCity, maxPrice, searchQuery, sortBy, showSavedOnly, savedSet]);
 
   return (
     <div className="space-y-8 pb-12">
@@ -249,6 +261,20 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
               {cat}
             </button>
           ))}
+
+          {/* Saved events filter (combines with the category filter) */}
+          <button
+            onClick={() => setShowSavedOnly((prev) => !prev)}
+            aria-pressed={showSavedOnly}
+            className={`ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all border ${
+              showSavedOnly
+                ? 'bg-rose-500/20 text-rose-200 border-rose-400/60'
+                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+            }`}
+          >
+            <Heart className={`w-3.5 h-3.5 ${showSavedOnly ? 'fill-current text-rose-400' : ''}`} />
+            Saved ({savedCount})
+          </button>
         </div>
 
         {/* Secondary Filters: City, Max Price, Sort */}
@@ -402,11 +428,18 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
       {filteredEvents.length === 0 ? (
         <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800 space-y-3">
           <Ticket className="w-10 h-10 text-slate-500 mx-auto" />
-          <h3 className="text-base font-bold text-white">No matching events found</h3>
-          <p className="text-xs text-slate-400">Try adjusting your budget slider, city filter, or search keywords.</p>
+          <h3 className="text-base font-bold text-white">
+            {showSavedOnly && savedCount === 0 ? 'No saved events yet' : 'No matching events found'}
+          </h3>
+          <p className="text-xs text-slate-400">
+            {showSavedOnly && savedCount === 0
+              ? 'Tap the heart on any event to save it here.'
+              : 'Try adjusting your budget slider, city filter, or search keywords.'}
+          </p>
           <button
             onClick={() => {
               setSelectedCategory('All');
+              setShowSavedOnly(false);
               setSelectedCity('All');
               setMaxPrice(500);
               setSearchQuery('');
@@ -461,6 +494,23 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Save (heart) button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleSaved(event.id);
+                    }}
+                    aria-pressed={savedSet.has(event.id)}
+                    className={`absolute top-3 right-14 p-2 rounded-full backdrop-blur-md transition-all ${
+                      savedSet.has(event.id)
+                        ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30'
+                        : 'bg-black/60 text-slate-300 hover:text-white hover:bg-black/80'
+                    }`}
+                    title={savedSet.has(event.id) ? 'Remove from saved' : 'Save event'}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${savedSet.has(event.id) ? 'fill-current' : ''}`} />
+                  </button>
 
                   {/* Price alert button */}
                   <button

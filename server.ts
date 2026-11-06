@@ -3,6 +3,12 @@ import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+  clampPageSize,
+  firstString,
+  formatEventDate,
+  mapTicketmasterCategory,
+} from './src/shared/ticketmasterMapping.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,8 +32,7 @@ async function startServer() {
     res.json({
       connected: hasKey,
       hasKey,
-      keyMasked: hasKey ? `${key.slice(0, 4)}...${key.slice(-4)}` : null,
-      message: hasKey 
+      message: hasKey
         ? 'Ticketmaster Discovery API v2 connected with configured API key'
         : 'Ticketmaster API key not detected in environment. Operating in hybrid aggregator mode.',
     });
@@ -36,7 +41,12 @@ async function startServer() {
   // Ticketmaster Events search proxy
   app.get('/api/ticketmaster/events', async (req: Request, res: Response) => {
     const key = getTicketmasterKey();
-    const { keyword, postalCode, city, stateCode, size = '20' } = req.query;
+    // Query values may be arrays or objects (?keyword=a&keyword=b); normalize to single strings.
+    const keyword = firstString(req.query.keyword);
+    const postalCode = firstString(req.query.postalCode);
+    const city = firstString(req.query.city);
+    const stateCode = firstString(req.query.stateCode);
+    const size = clampPageSize(req.query.size);
 
     if (!key) {
       return res.status(200).json({
@@ -50,21 +60,13 @@ async function startServer() {
     try {
       const url = new URL('https://app.ticketmaster.com/discovery/v2/events.json');
       url.searchParams.set('apikey', key);
-      url.searchParams.set('size', String(size));
+      url.searchParams.set('size', size);
       url.searchParams.set('sort', 'date,asc');
 
-      if (keyword && String(keyword).trim()) {
-        url.searchParams.set('keyword', String(keyword).trim());
-      }
-      if (postalCode && String(postalCode).trim()) {
-        url.searchParams.set('postalCode', String(postalCode).trim());
-      }
-      if (city && String(city).trim()) {
-        url.searchParams.set('city', String(city).trim());
-      }
-      if (stateCode && String(stateCode).trim()) {
-        url.searchParams.set('stateCode', String(stateCode).trim());
-      }
+      if (keyword) url.searchParams.set('keyword', keyword);
+      if (postalCode) url.searchParams.set('postalCode', postalCode);
+      if (city) url.searchParams.set('city', city);
+      if (stateCode) url.searchParams.set('stateCode', stateCode);
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -111,31 +113,12 @@ async function startServer() {
         // Formatted dates
         const rawDate = ev.dates?.start?.localDate || '2026-08-01';
         const rawTime = ev.dates?.start?.localTime ? ev.dates.start.localTime.slice(0, 5) : '19:30';
-        let formattedDate = rawDate;
-        try {
-          formattedDate = new Date(rawDate + 'T' + rawTime).toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-          });
-        } catch {
-          formattedDate = rawDate;
-        }
+        const formattedDate = formatEventDate(rawDate);
 
         // Segment / Category mapping
         const genre = ev.classifications?.[0]?.genre?.name || '';
-        const segment = ev.classifications?.[0]?.segment?.name || 'Concert';
-        let category = 'Concert';
-        if (genre.toLowerCase().includes('electronic') || genre.toLowerCase().includes('dance')) {
-          category = 'EDM / Festival';
-        } else if (segment.toLowerCase().includes('sports')) {
-          category = 'Sports';
-        } else if (segment.toLowerCase().includes('arts') || genre.toLowerCase().includes('comedy')) {
-          category = 'Comedy';
-        } else if (segment.toLowerCase().includes('theatre')) {
-          category = 'Theater';
-        }
+        const segment = ev.classifications?.[0]?.segment?.name || '';
+        const category = mapTicketmasterCategory(segment, genre);
 
         const attractions = ev._embedded?.attractions?.map((a: any) => a.name).join(', ') || ev.name;
 
