@@ -23,7 +23,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
   // Calculate lowest ticket price across platforms
   const allTiers = event.ticketPlatforms.flatMap((p) => p.tiers);
-  const minPrice = Math.min(...allTiers.map((t) => t.totalPrice));
+  const minPrice = allTiers.length ? Math.min(...allTiers.map((t) => t.totalPrice)) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/85 backdrop-blur-md">
@@ -58,11 +58,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
           {/* Title & Venue on banner */}
           <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex items-center gap-1.5 text-amber-400 text-xs font-semibold mb-1">
+            {event.rating > 0 && event.reviewsCount > 0 && <div className="flex items-center gap-1.5 text-amber-400 text-xs font-semibold mb-1">
               <Star className="w-3.5 h-3.5 fill-current" />
               <span>{event.rating}</span>
               <span className="text-slate-400 font-normal">({event.reviewsCount} reviews)</span>
-            </div>
+            </div>}
             <h2 className="text-xl sm:text-3xl font-extrabold text-white font-display tracking-tight leading-tight">
               {event.title}
             </h2>
@@ -164,10 +164,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         {/* Action Footer */}
         <div className="p-4 sm:p-5 bg-slate-900/90 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
-            <p className="text-xs text-slate-400">Aggregated prices from:</p>
+            <p className="text-xs text-slate-400">{event.isTicketmasterLive ? 'Ticketmaster listing:' : 'Sample prices • demo data:'}</p>
             <p className="text-xs font-semibold text-white">
-              <span className="text-rose-400 font-display text-xl font-bold">${minPrice}</span>
-              <span className="text-slate-400 ml-1">all fees included</span>
+              <span className="text-rose-400 font-display text-xl font-bold">{minPrice === null ? 'Check provider' : `${minPrice}`}</span>
+              {event.isTicketmasterLive && minPrice !== null && <span className="text-slate-400 ml-1">starting price; fees at checkout</span>}
             </p>
           </div>
 
@@ -198,7 +198,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white shadow-lg shadow-rose-500/25 transition-all"
             >
               <Ticket className="w-4 h-4" />
-              <span>Compare Tickets</span>
+              <span>{event.isTicketmasterLive ? 'View Tickets' : 'View Demo Offers'}</span>
             </button>
           </div>
         </div>
