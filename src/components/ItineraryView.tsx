@@ -118,17 +118,20 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
   };
 
   const handleBuildPackList = () => {
-    const suggestions = getPackingSuggestions(activePlan.eventCategory, activePlan.travelMode || 'local');
     updateCurrentPlan((plan) => {
-      const existing = new Set(plan.checklist.map((item) => item.text.trim().toLowerCase()));
-      const additions = suggestions
+      const previousSuggestions = plan.checklist.filter((item) => item.isPackSuggestion);
+      const manualItems = plan.checklist.filter((item) => !item.isPackSuggestion);
+      const existing = new Set(manualItems.map((item) => item.text.trim().toLowerCase()));
+      const previousStatus = new Map(previousSuggestions.map((item) => [item.text.toLowerCase(), item.done]));
+      const suggestions = getPackingSuggestions(plan.eventCategory, plan.travelMode || 'local')
         .filter((suggestion) => !existing.has(suggestion.text.toLowerCase()))
         .map((suggestion, index) => ({
           ...suggestion,
           id: `pack-${Date.now()}-${index}`,
-          done: false,
+          done: previousStatus.get(suggestion.text.toLowerCase()) || false,
+          isPackSuggestion: true,
         }));
-      return { ...plan, checklist: [...plan.checklist, ...additions] };
+      return { ...plan, checklist: [...manualItems, ...suggestions] };
     });
   };
 
