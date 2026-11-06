@@ -70,20 +70,31 @@ const INITIAL_PASS: UserPass = {
   purchasedAt: 'May 12, 2026',
 };
 
+/**
+ * Read a JSON array from localStorage. Falls back when the key is missing, the value is
+ * corrupted, or storage is unavailable, so bad stored data can't crash app startup.
+ */
+function readStoredArray<T>(key: string, fallback: T[]): T[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function App() {
   const [activeTab, setActiveTab] = useState<'aggregator' | 'itinerary' | 'expenses' | 'passes'>('aggregator');
-  const [events, setEvents] = useState<EventItem[]>(() => {
-    const saved = localStorage.getItem('afterglow_events');
-    return saved ? JSON.parse(saved) : INITIAL_EVENTS;
-  });
-  const [itineraries, setItineraries] = useState<EventItinerary[]>(() => {
-    const saved = localStorage.getItem('afterglow_itineraries');
-    return saved ? JSON.parse(saved) : [INITIAL_ITINERARY];
-  });
-  const [passes, setPasses] = useState<UserPass[]>(() => {
-    const saved = localStorage.getItem('afterglow_passes');
-    return saved ? JSON.parse(saved) : [INITIAL_PASS];
-  });
+  const [events, setEvents] = useState<EventItem[]>(() => readStoredArray('afterglow_events', INITIAL_EVENTS));
+  const [itineraries, setItineraries] = useState<EventItinerary[]>(() =>
+    readStoredArray('afterglow_itineraries', [INITIAL_ITINERARY]),
+  );
+  const [passes, setPasses] = useState<UserPass[]>(() => readStoredArray('afterglow_passes', [INITIAL_PASS]));
+  const [savedEventIds, setSavedEventIds] = useState<string[]>(() =>
+    readStoredArray<unknown>('afterglow_saved', []).filter((id): id is string => typeof id === 'string'),
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [ticketModalEvent, setTicketModalEvent] = useState<EventItem | null>(null);
@@ -129,6 +140,10 @@ export function App() {
   useEffect(() => {
     localStorage.setItem('afterglow_passes', JSON.stringify(passes));
   }, [passes]);
+
+  useEffect(() => {
+    localStorage.setItem('afterglow_saved', JSON.stringify(savedEventIds));
+  }, [savedEventIds]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -218,6 +233,17 @@ export function App() {
     );
   };
 
+  const handleToggleSaved = (eventId: string) => {
+    const title = events.find((e) => e.id === eventId)?.title ?? 'Event';
+    if (savedEventIds.includes(eventId)) {
+      setSavedEventIds((prev) => prev.filter((id) => id !== eventId));
+      showToast(`Removed "${title}" from Saved`);
+    } else {
+      setSavedEventIds((prev) => [eventId, ...prev]);
+      showToast(`Saved "${title}"`);
+    }
+  };
+
   const handleEventCreated = (newEvent: EventItem) => {
     setEvents((prev) => [newEvent, ...prev]);
     showToast(`Published "${newEvent.title}" to the aggregator!`);
@@ -265,6 +291,8 @@ export function App() {
             onOpenDetailModal={(e) => setDetailModalEvent(e)}
             onAddToPlanner={handleAddToPlanner}
             onTogglePriceAlert={handleTogglePriceAlert}
+            savedEventIds={savedEventIds}
+            onToggleSaved={handleToggleSaved}
             itineraryEventIds={itineraryEventIds}
             isTicketmasterConnected={isTicketmasterConnected}
             isSearchingTicketmaster={isSearchingTicketmaster}

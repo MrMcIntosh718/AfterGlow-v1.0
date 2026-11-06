@@ -3,7 +3,6 @@ import { EventItem } from '../types';
 export interface TicketmasterStatus {
   connected: boolean;
   hasKey: boolean;
-  keyMasked?: string | null;
   message: string;
 }
 
