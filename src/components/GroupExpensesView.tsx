@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, Trash2, ArrowRight, CheckCircle2, PieChart, Users, Receipt } from 'lucide-react';
+import { DollarSign, Plus, Trash2, ArrowRight, CheckCircle2, PieChart, Users, Receipt, Gauge } from 'lucide-react';
 import { EventItinerary, ExpenseItem } from '../types';
 
 interface GroupExpensesViewProps {
@@ -34,6 +34,16 @@ export const GroupExpensesView: React.FC<GroupExpensesViewProps> = ({
 
   // Calculate totals and settlement balances
   const totalSpent = activePlan.expenses.reduce((sum, item) => sum + item.amount, 0);
+  const perPersonSpent = activePlan.crew.length ? totalSpent / activePlan.crew.length : totalSpent;
+  const perPersonBudget = activePlan.perPersonBudget || 0;
+  const budgetProgress = perPersonBudget > 0 ? Math.min(100, (perPersonSpent / perPersonBudget) * 100) : 0;
+
+  const updatePerPersonBudget = (value: string) => {
+    const parsed = Number.parseFloat(value);
+    setItineraries((prev) => prev.map((plan, idx) => idx === activePlanIdx
+      ? { ...plan, perPersonBudget: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined }
+      : plan));
+  };
 
   // Settlement matrix
   // balance: positive means they paid more than their share (owed money); negative means they owe money.
@@ -166,7 +176,7 @@ export const GroupExpensesView: React.FC<GroupExpensesViewProps> = ({
       </div>
 
       {/* Top 3 Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-1">
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Group Spend</p>
           <p className="text-2xl sm:text-3xl font-bold font-display text-white">${totalSpent.toFixed(2)}</p>
@@ -187,6 +197,18 @@ export const GroupExpensesView: React.FC<GroupExpensesViewProps> = ({
             {settlements.length} Transfers
           </p>
           <p className="text-[11px] text-slate-500">Auto-balanced settlement paths</p>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2">
+          <label htmlFor="per-person-budget" className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider"><Gauge className="h-4 w-4 text-rose-400" /> Budget Guard / Person</label>
+          <div className="flex items-center gap-2">
+            <span className="text-lg text-slate-400">$</span>
+            <input id="per-person-budget" type="number" min="1" step="5" value={perPersonBudget || ''} onChange={(e) => updatePerPersonBudget(e.target.value)} placeholder="Set a cap" className="w-full min-w-0 rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-sm text-white placeholder:text-slate-500 focus:border-rose-500 focus:outline-none" />
+          </div>
+          {perPersonBudget > 0 ? <>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-800"><div className={`h-full rounded-full ${budgetProgress >= 100 ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${budgetProgress}%` }} /></div>
+            <p className="text-[11px] text-slate-400">${perPersonSpent.toFixed(2)} logged per person · {perPersonSpent > perPersonBudget ? `${(perPersonSpent - perPersonBudget).toFixed(2)} over cap` : `${(perPersonBudget - perPersonSpent).toFixed(2)} left`}</p>
+          </> : <p className="text-[11px] text-slate-500">Tracks recorded shared expenses only.</p>}
         </div>
       </div>
 
