@@ -20,6 +20,8 @@ const INITIAL_ITINERARY: EventItinerary = {
   eventDate: 'Saturday, June 20, 2026',
   eventVenue: 'The Brooklyn Mirage',
   eventCity: 'New York, NY',
+  eventCategory: 'EDM / Festival',
+  travelMode: 'local',
   bannerUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80',
   notes: 'Bring earplugs, hydration packs, and portable chargers. Pre-drinks at House of Yes rooftop.',
   schedule: [
@@ -209,6 +211,8 @@ export function App() {
       eventDate: event.formattedDate,
       eventVenue: event.venue,
       eventCity: `${event.city}, ${event.state}`,
+      eventCategory: event.category,
+      travelMode: 'local',
       bannerUrl: event.bannerUrl,
       notes: `Custom itinerary for ${event.title}`,
       schedule: [
