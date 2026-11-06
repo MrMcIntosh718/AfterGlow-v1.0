@@ -142,7 +142,18 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
       }
     });
 
-    return items.slice(0, 8);
+    const typePriority: Record<SuggestionItem['type'], number> = { zip: 0, city: 1, artist: 2, venue: 3, event: 4 };
+    const score = (item: SuggestionItem) => {
+      const title = item.title.toLowerCase();
+      const value = item.value.toLowerCase();
+      if (title === q || value === q) return 0;
+      if (title.startsWith(q) || value.startsWith(q)) return 1;
+      if (title.split(/[\\s,]+/).some((part) => part.startsWith(q))) return 2;
+      return 3;
+    };
+    return items
+      .sort((a, b) => score(a) - score(b) || typePriority[a.type] - typePriority[b.type] || a.title.localeCompare(b.title))
+      .slice(0, 8);
   }, [searchQuery, events]);
 
   const handleSelect = (val: string) => {
