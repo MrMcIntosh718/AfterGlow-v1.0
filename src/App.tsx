@@ -382,7 +382,7 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-1.5 text-slate-400">
-            <span>Aggregating SeatGeek, Ticketmaster, DICE, StubHub, VividSeats & AXS</span>
+            <span>Live Ticketmaster events and clearly labeled sample listings</span>
           </div>
         </div>
       </footer>
