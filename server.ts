@@ -17,6 +17,31 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function encodeGeohash(latitude: number, longitude: number, precision = 7): string {
+  const alphabet = '0123456789bcdefghjkmnpqrstuvwxyz';
+  let latRange: [number, number] = [-90, 90];
+  let lonRange: [number, number] = [-180, 180];
+  let hash = '';
+  let bits = 0;
+  let value = 0;
+  let even = true;
+  while (hash.length < precision) {
+    const range = even ? lonRange : latRange;
+    const coordinate = even ? longitude : latitude;
+    const midpoint = (range[0] + range[1]) / 2;
+    value = (value << 1) | (coordinate >= midpoint ? 1 : 0);
+    if (coordinate >= midpoint) range[0] = midpoint;
+    else range[1] = midpoint;
+    even = !even;
+    if (++bits === 5) {
+      hash += alphabet[value];
+      bits = 0;
+      value = 0;
+    }
+  }
+  return hash;
+}
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -50,6 +75,8 @@ async function startServer() {
     const postalCode = firstString(req.query.postalCode);
     const city = firstString(req.query.city);
     const stateCode = firstString(req.query.stateCode);
+    const requestedRadius = Number.parseInt(firstString(req.query.radius), 10);
+    const radius = Number.isFinite(requestedRadius) ? Math.max(1, Math.min(requestedRadius, 250)) : 25;
     const size = clampPageSize(req.query.size);
     const requestedPage = Number.parseInt(firstString(req.query.page), 10);
     const page = Number.isFinite(requestedPage) ? Math.max(0, Math.min(requestedPage, 1000)) : 0;
@@ -75,8 +102,28 @@ async function startServer() {
       url.searchParams.set('endDateTime', endDate.toISOString().replace(/\.\d{3}Z$/, 'Z'));
 
       if (keyword) url.searchParams.set('keyword', keyword);
-      if (postalCode) url.searchParams.set('postalCode', postalCode);
-      if (city) url.searchParams.set('city', city);
+      if (postalCode || city) {
+        const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+        if (mapboxToken) {
+          const locationQuery = postalCode || `${city}${stateCode ? `, ${stateCode}` : ''}`;
+          const geocodeUrl = new URL('https://api.mapbox.com/search/geocode/v6/forward');
+          geocodeUrl.searchParams.set('q', locationQuery);
+          geocodeUrl.searchParams.set('country', 'US');
+          geocodeUrl.searchParams.set('limit', '1');
+          geocodeUrl.searchParams.set('access_token', mapboxToken);
+          const geocodeResponse = await fetch(geocodeUrl);
+          if (!geocodeResponse.ok) throw new Error('Unable to locate that city or ZIP code for radius search.');
+          const geocode = await geocodeResponse.json();
+          const center = geocode.features?.[0]?.geometry?.coordinates;
+          if (!Array.isArray(center) || center.length < 2) throw new Error('No matching city or ZIP code found. Try adding a state abbreviation.');
+          url.searchParams.set('geoPoint', encodeGeohash(Number(center[1]), Number(center[0])));
+          url.searchParams.set('radius', String(radius));
+          url.searchParams.set('unit', 'miles');
+        } else {
+          if (postalCode) url.searchParams.set('postalCode', postalCode);
+          if (city) url.searchParams.set('city', city);
+        }
+      }
       if (stateCode) url.searchParams.set('stateCode', stateCode);
 
       const response = await fetch(url.toString(), {
