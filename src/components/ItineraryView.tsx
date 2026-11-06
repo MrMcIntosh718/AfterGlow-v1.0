@@ -455,6 +455,8 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
               <span className="text-xs text-slate-400">{activePlan.crew.filter((member) => member.status === 'confirmed' || member.status === 'host').length} going · {activePlan.crew.filter((member) => member.status === 'maybe').length} maybe</span>
             </div>
 
+            <p className="-mt-2 text-[10px] text-slate-500">Organizer-tracked on this device; this does not send invitations.</p>
+
             <div className="space-y-2">
               {activePlan.crew.map((member) => (
                 <div
