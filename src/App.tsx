@@ -212,18 +212,17 @@ export function App() {
       bannerUrl: event.bannerUrl,
       notes: `Custom itinerary for ${event.title}`,
       schedule: [
-        { id: `s-${Date.now()}-1`, time: '6:00 PM', title: 'Meetup & Dinner / Drinks', type: 'pre-party', location: 'Nearby Lounge' },
-        { id: `s-${Date.now()}-2`, time: event.doorsOpen, title: 'Doors Open & Venue Arrival', type: 'travel', location: event.venue },
-        { id: `s-${Date.now()}-3`, time: event.time.split(' - ')[0] || event.time, title: `${event.artistOrPerformer} Main Show`, type: 'main', location: event.venue },
-        { id: `s-${Date.now()}-4`, time: '1:00 AM', title: 'Official AfterGlow Gathering', type: 'afterglow', location: 'Rooftop / Afters' },
+        { id: `s-${Date.now()}-1`, time: 'Before event', title: 'Meetup (add a place)', type: 'pre-party', location: 'Choose a meetup location' },
+        { id: `s-${Date.now()}-2`, time: event.time, title: `${event.artistOrPerformer} · Main event`, type: 'main', location: event.venue },
+        { id: `s-${Date.now()}-3`, time: 'After event', title: 'After-event plans (add a place)', type: 'afterglow', location: 'Choose an after-event location' },
       ],
       crew: [
         { id: `crew-${Date.now()}`, name: 'You (Host)', avatar: '#f43f5e', status: 'host' },
       ],
       expenses: [],
       checklist: [
-        { id: `k-${Date.now()}-1`, text: 'Government Photo ID', done: true, category: 'essentials' },
-        { id: `k-${Date.now()}-2`, text: 'AfterGlow Mobile Pass', done: true, category: 'tickets' },
+        { id: `k-${Date.now()}-1`, text: 'Check ticket provider entry requirements', done: false, category: 'essentials' },
+        { id: `k-${Date.now()}-2`, text: 'Save your provider ticket for entry', done: false, category: 'tickets' },
         { id: `k-${Date.now()}-3`, text: 'Fully Charged Phone', done: false, category: 'gear' },
       ],
     };
