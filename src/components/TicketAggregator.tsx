@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { EventItem, CategoryType } from '../types';
 import { SearchAutocomplete } from './SearchAutocomplete';
+import { BrightDataDiscoveries } from './BrightDataDiscoveries';
 
 interface TicketAggregatorProps {
   events: EventItem[];
@@ -423,6 +424,8 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
           </div>
         </div>
       </div>
+
+      <BrightDataDiscoveries keyword={searchQuery.trim()} />
 
       {/* Events Grid */}
       {filteredEvents.length === 0 ? (

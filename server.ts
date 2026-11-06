@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -9,9 +9,16 @@ import {
   formatEventDate,
   mapTicketmasterCategory,
 } from './src/shared/ticketmasterMapping.ts';
+import { brightDataConfigured, searchBrightDataEvents } from './server/brightdata.ts';
+
+// Load the documented local secrets file first; then allow a plain .env to fill unset values.
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const brightDataCache = new Map<string, { expiresAt: number; events: Awaited<ReturnType<typeof searchBrightDataEvents>> }>();
+const brightDataRateLimits = new Map<string, { count: number; resetAt: number }>();
 
 async function startServer() {
   const app = express();
@@ -195,6 +202,49 @@ async function startServer() {
         error: err.message,
         events: [],
       });
+    }
+  });
+
+  // Bright Data web discovery. Searches are user-triggered and cached to control API usage.
+  app.get('/api/brightdata/status', (_req: Request, res: Response) => {
+    res.json({ connected: brightDataConfigured() });
+  });
+
+  app.get('/api/brightdata/events', async (req: Request, res: Response) => {
+    const query = firstString(req.query.keyword).replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 140);
+    if (!query) {
+      return res.status(400).json({ error: 'Enter an artist, venue, or city to search.' });
+    }
+    if (!brightDataConfigured()) {
+      return res.status(503).json({ error: 'Bright Data is not configured on the server. Add its API key, SERP zone, and Unlocker zone to .env.local.' });
+    }
+
+    const now = Date.now();
+    const caller = req.ip || req.socket.remoteAddress || 'unknown';
+    const bucket = brightDataRateLimits.get(caller);
+    if (bucket && bucket.resetAt > now && bucket.count >= 5) {
+      return res.status(429).json({ error: 'Bright Data searches are limited to five per minute. Please wait before searching again.' });
+    }
+    if (!bucket || bucket.resetAt <= now) brightDataRateLimits.set(caller, { count: 1, resetAt: now + 60_000 });
+    else bucket.count += 1;
+
+    const cacheKey = query.toLowerCase();
+    const cached = brightDataCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) return res.json({ events: cached.events, cached: true });
+
+    try {
+      const events = await searchBrightDataEvents(query, '');
+      brightDataCache.set(cacheKey, { events, expiresAt: now + 5 * 60_000 });
+      if (brightDataCache.size > 100) {
+        for (const [key, value] of brightDataCache) {
+          if (value.expiresAt <= now) brightDataCache.delete(key);
+          if (brightDataCache.size <= 100) break;
+        }
+      }
+      return res.json({ events, cached: false });
+    } catch (error) {
+      console.warn('[Bright Data event search] Failed:', error instanceof Error ? error.message : 'unknown error');
+      return res.status(502).json({ error: error instanceof Error ? error.message : 'Bright Data event search is temporarily unavailable.' });
     }
   });
 
