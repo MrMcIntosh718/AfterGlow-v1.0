@@ -21,8 +21,8 @@ interface TicketAggregatorProps {
   isTicketmasterConnected?: boolean;
   isSearchingTicketmaster?: boolean;
   onRefreshTicketmaster?: (query?: string) => void;
-  onSubmitSearch?: (query: string) => void;
-  onLoadMore?: () => void;
+  onSubmitSearch?: (query: string, radius: number) => void;
+  onLoadMore?: (radius: number) => void;
   hasMoreTicketmasterEvents?: boolean;
 }
 
@@ -47,6 +47,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [maxPrice, setMaxPrice] = useState<number>(350);
+  const [searchRadius, setSearchRadius] = useState(25);
   const [sortBy, setSortBy] = useState<'deal' | 'price-asc' | 'date' | 'rating'>('deal');
   const [showSavedOnly, setShowSavedOnly] = useState(false);
 
@@ -352,9 +353,20 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
               onSelectSuggestion={(val) => setSearchQuery(val)}
               isTicketmasterConnected={isTicketmasterConnected}
               isSearchingTicketmaster={isSearchingTicketmaster}
-              onSubmitSearch={onSubmitSearch || onRefreshTicketmaster}
+              onSubmitSearch={(query) => { if (onSubmitSearch) onSubmitSearch(query, searchRadius); else onRefreshTicketmaster?.(query); }}
               placeholder="Search artist, venue, city, state, or ZIP code..."
             />
+          </div>
+
+          <div className="flex flex-col items-start gap-1">
+            <label className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 shrink-0">
+              <MapPin className="h-4 w-4 text-rose-400" />
+              <span>Within</span>
+              <select aria-label="Search radius" value={searchRadius} onChange={(e) => setSearchRadius(Number(e.target.value))} className="bg-transparent text-white focus:outline-none">
+                {[10, 25, 50, 100, 250].map((miles) => <option key={miles} value={miles} className="bg-slate-900">{miles} mi</option>)}
+              </select>
+            </label>
+            <span className="pl-1 text-[10px] text-slate-500">Applies to city and ZIP searches</span>
           </div>
 
           {/* Ticketmaster Live API Connection Status Badge */}
@@ -614,7 +626,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
       {hasMoreTicketmasterEvents && onLoadMore && (
         <div className="flex justify-center pt-2">
           <button
-            onClick={onLoadMore}
+            onClick={() => onLoadMore(searchRadius)}
             disabled={isSearchingTicketmaster}
             className="px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-sm font-semibold text-slate-200 hover:border-rose-500/50 hover:text-white disabled:opacity-50 transition-colors"
           >
