@@ -96,6 +96,7 @@ export interface ChecklistItem {
   done: boolean;
   category: 'essentials' | 'gear' | 'tickets';
   productSlug?: string;
+  isPackSuggestion?: boolean;
 }
 
 export interface EventItinerary {
