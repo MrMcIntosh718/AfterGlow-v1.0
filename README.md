@@ -7,6 +7,7 @@ Afterglow helps people discover live events and plan road trips around them. The
 - Search Ticketmaster events by keyword, city, date range, and category
 - Browse event locations on an interactive map
 - Build multi-city road trip itineraries and calculate driving legs
+- Share event plans with Google Maps directions for each stop
 - Send ticket clicks through a partner-domain-validated redirect
 
 ## Requirements
