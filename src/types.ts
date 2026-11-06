@@ -95,6 +95,7 @@ export interface ChecklistItem {
   text: string;
   done: boolean;
   category: 'essentials' | 'gear' | 'tickets';
+  productSlug?: string;
 }
 
 export interface EventItinerary {
@@ -104,6 +105,8 @@ export interface EventItinerary {
   eventDate: string;
   eventVenue: string;
   eventCity: string;
+  eventCategory?: CategoryType;
+  travelMode?: 'local' | 'roadtrip' | 'flying';
   bannerUrl: string;
   notes: string;
   schedule: ItineraryScheduleItem[];
