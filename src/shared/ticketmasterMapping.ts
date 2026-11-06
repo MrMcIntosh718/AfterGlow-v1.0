@@ -1,4 +1,4 @@
-import type { CategoryType } from '../types';
+import type { CategoryType, PriceRange } from '../types';
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
@@ -66,4 +66,37 @@ export function formatEventDate(localDate: string): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+/**
+ * Pull the first usable price range out of Ticketmaster's `priceRanges`. Returns undefined when
+ * the event has no published price, so callers show "price at Ticketmaster" instead of inventing one.
+ */
+export function pickPriceRange(priceRanges: unknown): PriceRange | undefined {
+  if (!Array.isArray(priceRanges)) return undefined;
+
+  for (const entry of priceRanges) {
+    if (!entry || typeof entry !== 'object') continue;
+    const { min, max, currency } = entry as Record<string, unknown>;
+    if (typeof min !== 'number' || !Number.isFinite(min) || min < 0) continue;
+
+    const high = typeof max === 'number' && Number.isFinite(max) && max >= min ? max : min;
+    return {
+      min: Math.round(min),
+      max: Math.round(high),
+      currency: typeof currency === 'string' && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : 'USD',
+    };
+  }
+  return undefined;
+}
+
+/** Return the URL only if it parses and is https; otherwise undefined (never render other schemes in an href). */
+export function safeHttpsUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
 }

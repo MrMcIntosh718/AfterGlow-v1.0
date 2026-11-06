@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, MapPin, Music, Building2, Ticket, Sparkles, X, ChevronRight, Hash } from 'lucide-react';
 import { EventItem } from '../types';
+import { getEventMinPrice, formatPrice } from '../shared/pricing.ts';
 
 export interface SuggestionItem {
   type: 'zip' | 'city' | 'artist' | 'venue' | 'event';
@@ -147,7 +148,10 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           items.push({
             type: 'event',
             title: e.title,
-            subtitle: `${e.formattedDate} • From $${Math.min(...e.ticketPlatforms.flatMap(p => p.tiers.map(t => t.totalPrice)))}`,
+            subtitle: (() => {
+              const price = getEventMinPrice(e);
+              return price === null ? e.formattedDate : `${e.formattedDate} • From ${formatPrice(price, e.priceRange?.currency)}`;
+            })(),
             value: e.title,
           });
         }

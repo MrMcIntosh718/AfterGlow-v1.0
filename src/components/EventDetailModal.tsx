@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Calendar, MapPin, Clock, Tag, Star, Music, Users, Ticket, PlusCircle, Check } from 'lucide-react';
+import { X, Calendar, MapPin, Clock, Tag, Star, Music, Users, Ticket, PlusCircle, Check, ExternalLink } from 'lucide-react';
 import { EventItem } from '../types';
+import { getEventMinPrice, formatPrice } from '../shared/pricing.ts';
 
 interface EventDetailModalProps {
   event: EventItem;
@@ -21,9 +22,8 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  // Calculate lowest ticket price across platforms
-  const allTiers = event.ticketPlatforms.flatMap((p) => p.tiers);
-  const minPrice = Math.min(...allTiers.map((t) => t.totalPrice));
+  // Lowest known price (null when the source doesn't publish one)
+  const minPrice = getEventMinPrice(event);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/85 backdrop-blur-md">
@@ -58,11 +58,15 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
           {/* Title & Venue on banner */}
           <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex items-center gap-1.5 text-amber-400 text-xs font-semibold mb-1">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>{event.rating}</span>
-              <span className="text-slate-400 font-normal">({event.reviewsCount} reviews)</span>
-            </div>
+            {event.rating !== undefined && (
+              <div className="flex items-center gap-1.5 text-amber-400 text-xs font-semibold mb-1">
+                <Star className="w-3.5 h-3.5 fill-current" />
+                <span>{event.rating}</span>
+                {event.reviewsCount !== undefined && (
+                  <span className="text-slate-400 font-normal">({event.reviewsCount} reviews)</span>
+                )}
+              </div>
+            )}
             <h2 className="text-xl sm:text-3xl font-extrabold text-white font-display tracking-tight leading-tight">
               {event.title}
             </h2>
@@ -164,11 +168,33 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         {/* Action Footer */}
         <div className="p-4 sm:p-5 bg-slate-900/90 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
-            <p className="text-xs text-slate-400">Aggregated prices from:</p>
-            <p className="text-xs font-semibold text-white">
-              <span className="text-rose-400 font-display text-xl font-bold">${minPrice}</span>
-              <span className="text-slate-400 ml-1">all fees included</span>
-            </p>
+            {event.isTicketmasterLive ? (
+              <>
+                <p className="text-xs text-slate-400">Ticketmaster price:</p>
+                <p className="text-xs font-semibold text-white">
+                  {minPrice !== null ? (
+                    <>
+                      <span className="text-rose-400 font-display text-xl font-bold">
+                        From {formatPrice(minPrice, event.priceRange?.currency)}
+                      </span>
+                      <span className="text-slate-400 ml-1">as listed; fees may be added at checkout</span>
+                    </>
+                  ) : (
+                    <span className="text-slate-300">Not published. See the Ticketmaster page.</span>
+                  )}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-slate-400">Aggregated prices from:</p>
+                <p className="text-xs font-semibold text-white">
+                  <span className="text-rose-400 font-display text-xl font-bold">
+                    {minPrice !== null ? formatPrice(minPrice) : 'N/A'}
+                  </span>
+                  <span className="text-slate-400 ml-1">all fees included</span>
+                </p>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto">
@@ -193,13 +219,31 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               )}
             </button>
 
-            <button
-              onClick={() => onOpenTicketModal(event)}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white shadow-lg shadow-rose-500/25 transition-all"
-            >
-              <Ticket className="w-4 h-4" />
-              <span>Compare Tickets</span>
-            </button>
+            {event.isTicketmasterLive ? (
+              event.ticketUrl ? (
+                <a
+                  href={event.ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white shadow-lg shadow-rose-500/25 transition-all"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Tickets on Ticketmaster</span>
+                </a>
+              ) : (
+                <span className="flex-1 sm:flex-initial text-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-800 text-slate-500">
+                  No ticket link available
+                </span>
+              )
+            ) : (
+              <button
+                onClick={() => onOpenTicketModal(event)}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white shadow-lg shadow-rose-500/25 transition-all"
+              >
+                <Ticket className="w-4 h-4" />
+                <span>Compare Tickets</span>
+              </button>
+            )}
           </div>
         </div>
 

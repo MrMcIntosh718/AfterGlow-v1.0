@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, MapPin, Calendar, Clock, Star, Bell, BellOff, 
-  ArrowUpDown, ShieldCheck, Ticket, PlusCircle, Check, Sparkles, ChevronRight, Zap, RefreshCw, Hash, Heart
+  ArrowUpDown, ShieldCheck, Ticket, PlusCircle, Check, Sparkles, ChevronRight, Zap, RefreshCw, Hash, Heart, ExternalLink
 } from 'lucide-react';
 import { EventItem, CategoryType } from '../types';
 import { SearchAutocomplete } from './SearchAutocomplete';
+import { getEventMinPrice, formatPrice } from '../shared/pricing.ts';
 
 interface TicketAggregatorProps {
   events: EventItem[];
@@ -94,10 +95,8 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
   }, [events]);
 
   // Compute lowest price helper
-  const getMinPrice = (event: EventItem) => {
-    const allTiers = event.ticketPlatforms.flatMap((p) => p.tiers);
-    return Math.min(...allTiers.map((t) => t.totalPrice));
-  };
+  // null = price unknown (e.g. a live event whose source publishes no price)
+  const getMinPrice = (event: EventItem): number | null => getEventMinPrice(event);
 
   // Filter & sort
   const filteredEvents = useMemo(() => {
@@ -110,7 +109,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
 
       // Max price filter
       const minPrice = getMinPrice(e);
-      if (minPrice > maxPrice) return false;
+      if (minPrice !== null && minPrice > maxPrice) return false;
 
       // Cleaned search query
       const trimmedQuery = searchQuery.trim().toLowerCase();
@@ -192,16 +191,20 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
       return true;
     }).sort((a, b) => {
       if (sortBy === 'price-asc') {
-        return getMinPrice(a) - getMinPrice(b);
+        const pa = getMinPrice(a);
+        const pb = getMinPrice(b);
+        if (pa === null || pb === null) return pa === pb ? 0 : pa === null ? 1 : -1; // unknown last
+        return pa - pb;
       }
       if (sortBy === 'rating') {
-        return b.rating - a.rating;
+        return (b.rating ?? -1) - (a.rating ?? -1); // unrated last
       }
       if (sortBy === 'date') {
         return a.date.localeCompare(b.date);
       }
       // 'deal' default: combination of rating and price
-      return (b.rating * 100 - getMinPrice(b)) - (a.rating * 100 - getMinPrice(a));
+      const dealScore = (e: EventItem) => (e.rating ?? 0) * 100 - (getMinPrice(e) ?? 0);
+      return dealScore(b) - dealScore(a);
     });
   }, [events, selectedCategory, selectedCity, maxPrice, searchQuery, sortBy, showSavedOnly, savedSet]);
 
@@ -532,11 +535,13 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                     )}
                   </button>
 
-                  {/* Rating on image */}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-xs text-amber-400 font-semibold bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md">
-                    <Star className="w-3 h-3 fill-current" />
-                    <span>{event.rating}</span>
-                  </div>
+                  {/* Rating on image (only when a source provides one) */}
+                  {event.rating !== undefined && (
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1 text-xs text-amber-400 font-semibold bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md">
+                      <Star className="w-3 h-3 fill-current" />
+                      <span>{event.rating}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Content */}
@@ -572,6 +577,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                     </div>
 
                     {/* Platform comparison price chips */}
+                    {platformPrices.length > 0 ? (
                     <div className="pt-2">
                       <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1 flex items-center justify-between">
                         <span>Aggregated Best Prices</span>
@@ -592,15 +598,22 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                         ))}
                       </div>
                     </div>
+                    ) : (
+                      <div className="pt-2 text-[11px] text-slate-400">
+                        {event.priceRange
+                          ? `Ticketmaster lists ${formatPrice(event.priceRange.min, event.priceRange.currency)}–${formatPrice(event.priceRange.max, event.priceRange.currency)}. Fees may be added at checkout.`
+                          : 'Ticketmaster has not published a price for this event.'}
+                      </div>
+                    )}
 
                   </div>
 
                   {/* Card Action Footer */}
                   <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-500 block">From</span>
+                      <span className="text-[10px] text-slate-500 block">{minPrice !== null ? 'From' : 'Price'}</span>
                       <span className="text-lg font-bold font-display text-white">
-                        ${minPrice}
+                        {minPrice !== null ? formatPrice(minPrice, event.priceRange?.currency) : 'See Ticketmaster'}
                       </span>
                     </div>
 
@@ -621,13 +634,31 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                         )}
                       </button>
 
-                      <button
-                        onClick={() => onOpenTicketModal(event)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all"
-                      >
-                        <Ticket className="w-3.5 h-3.5" />
-                        <span>Compare & Buy</span>
-                      </button>
+                      {event.isTicketmasterLive ? (
+                        event.ticketUrl ? (
+                          <a
+                            href={event.ticketUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Tickets on Ticketmaster</span>
+                          </a>
+                        ) : (
+                          <span className="px-3.5 py-2 rounded-xl bg-slate-800 text-slate-500 text-xs font-bold">
+                            No ticket link
+                          </span>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => onOpenTicketModal(event)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all"
+                        >
+                          <Ticket className="w-3.5 h-3.5" />
+                          <span>Compare & Buy</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
