@@ -135,7 +135,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           items.push({
             type: 'event',
             title: e.title,
-            subtitle: `${e.formattedDate} • From $${Math.min(...e.ticketPlatforms.flatMap(p => p.tiers.map(t => t.totalPrice)))}`,
+            subtitle: `${e.formattedDate} • ${(() => { const prices = e.ticketPlatforms.flatMap((p) => p.tiers.map((t) => t.totalPrice)); return prices.length ? `From ${Math.min(...prices)}` : 'Check provider for price'; })()}`,
             value: e.title,
           });
         }
