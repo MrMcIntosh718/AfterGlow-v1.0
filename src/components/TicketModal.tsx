@@ -22,7 +22,8 @@ export const TicketModal: React.FC<TicketModalProps> = ({
   const [purchaseStep, setPurchaseStep] = useState<'compare' | 'confirm' | 'success'>('compare');
   const [buyerName, setBuyerName] = useState<string>('Alex Hunter');
 
-  if (!isOpen) return null;
+  // The simulated checkout only makes sense for events with platform listings; live events link out instead.
+  if (!isOpen || event.ticketPlatforms.length === 0) return null;
 
   // Extract all distinct tiers available across platforms
   const allTiers = Array.from(

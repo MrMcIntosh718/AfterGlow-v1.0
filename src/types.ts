@@ -36,6 +36,12 @@ export interface PlatformListing {
   tiers: TicketTierOption[];
 }
 
+export interface PriceRange {
+  min: number;
+  max: number;
+  currency: string; // ISO 4217, e.g. 'USD'
+}
+
 export interface EventItem {
   id: string;
   title: string;
@@ -52,14 +58,18 @@ export interface EventItem {
   bannerUrl: string;
   description: string;
   lineup: { time: string; act: string; stage?: string }[];
-  rating: number;
-  reviewsCount: number;
+  rating?: number; // undefined when no source provides one
+  reviewsCount?: number;
   ageRestriction: string;
   priceAlertActive?: boolean;
   tags: string[];
   ticketPlatforms: PlatformListing[];
   isCustomHostEvent?: boolean;
   isTicketmasterLive?: boolean;
+  /** Live events: the price range exactly as the source lists it (undefined = not published). */
+  priceRange?: PriceRange;
+  /** Live events: link to the source's event page, where tickets are actually bought. */
+  ticketUrl?: string;
 }
 
 export interface ItineraryScheduleItem {

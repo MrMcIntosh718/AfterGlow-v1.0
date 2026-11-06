@@ -11,6 +11,7 @@ import { INITIAL_EVENTS } from './data/mockEvents';
 import { EventItem, EventItinerary, UserPass } from './types';
 import { Sparkles, Heart } from 'lucide-react';
 import { checkTicketmasterStatus, fetchTicketmasterEvents } from './services/ticketmaster';
+import { mergeLiveEvents, migrateStoredEvent } from './shared/eventData.ts';
 
 const INITIAL_ITINERARY: EventItinerary = {
   id: 'plan-mirage-fest',
@@ -87,7 +88,9 @@ function readStoredArray<T>(key: string, fallback: T[]): T[] {
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'aggregator' | 'itinerary' | 'expenses' | 'passes'>('aggregator');
-  const [events, setEvents] = useState<EventItem[]>(() => readStoredArray('afterglow_events', INITIAL_EVENTS));
+  const [events, setEvents] = useState<EventItem[]>(() =>
+    readStoredArray('afterglow_events', INITIAL_EVENTS).map(migrateStoredEvent),
+  );
   const [itineraries, setItineraries] = useState<EventItinerary[]>(() =>
     readStoredArray('afterglow_itineraries', [INITIAL_ITINERARY]),
   );
@@ -115,11 +118,7 @@ export function App() {
           setIsSearchingTicketmaster(true);
           fetchTicketmasterEvents({ size: '10' }).then((res) => {
             if (isMounted && res.success && res.events.length > 0) {
-              setEvents((prev) => {
-                const existingIds = new Set(prev.map((e) => e.id));
-                const newOnes = res.events.filter((e) => !existingIds.has(e.id));
-                return [...newOnes, ...prev];
-              });
+              setEvents((prev) => mergeLiveEvents(prev, res.events));
             }
             if (isMounted) setIsSearchingTicketmaster(false);
           });
@@ -163,11 +162,7 @@ export function App() {
 
     setIsSearchingTicketmaster(false);
     if (res.success && res.events.length > 0) {
-      setEvents((prev) => {
-        const existingIds = new Set(prev.map((e) => e.id));
-        const newOnes = res.events.filter((e) => !existingIds.has(e.id));
-        return [...newOnes, ...prev];
-      });
+      setEvents((prev) => mergeLiveEvents(prev, res.events));
       showToast(`Loaded ${res.events.length} live Ticketmaster events!`);
     } else if (!isTicketmasterConnected) {
       showToast('Ticketmaster API ready in aggregator mode. Configured via TICKETMASTER_API_KEY.');

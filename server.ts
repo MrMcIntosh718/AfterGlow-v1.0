@@ -8,6 +8,8 @@ import {
   firstString,
   formatEventDate,
   mapTicketmasterCategory,
+  pickPriceRange,
+  safeHttpsUrl,
 } from './src/shared/ticketmasterMapping.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -104,11 +106,8 @@ async function startServer() {
           images[0]?.url ||
           'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80';
 
-        // Pricing extraction
-        const priceRange = ev.priceRanges?.[0] || { min: 45, max: 180 };
-        const baseMin = Math.round(priceRange.min) || 49;
-        const tmFee = Math.round(baseMin * 0.22);
-        const tmTotal = baseMin + tmFee;
+        // Price range exactly as Ticketmaster publishes it (undefined when it doesn't).
+        const priceRange = pickPriceRange(ev.priceRanges);
 
         // Formatted dates
         const rawDate = ev.dates?.start?.localDate || '2026-08-01';
@@ -121,38 +120,6 @@ async function startServer() {
         const category = mapTicketmasterCategory(segment, genre);
 
         const attractions = ev._embedded?.attractions?.map((a: any) => a.name).join(', ') || ev.name;
-
-        // Build Ticketmaster listing plus aggregated competitors comparison
-        const ticketPlatforms = [
-          {
-            platformName: 'Ticketmaster',
-            logoColor: '#026cdf',
-            reliabilityScore: 99,
-            directUrl: ev.url || 'https://ticketmaster.com',
-            tiers: [
-              { tierName: 'General Admission', basePrice: baseMin, fee: tmFee, totalPrice: tmTotal, availableCount: 50, dealScore: 'Standard', inStock: true },
-              { tierName: 'VIP Pit / Lounge', basePrice: Math.round(baseMin * 2.2), fee: Math.round(baseMin * 2.2 * 0.24), totalPrice: Math.round(baseMin * 2.2 * 1.24), availableCount: 12, dealScore: 'VIP Pick', inStock: true },
-            ],
-          },
-          {
-            platformName: 'SeatGeek',
-            logoColor: '#f05323',
-            reliabilityScore: 98,
-            directUrl: 'https://seatgeek.com',
-            tiers: [
-              { tierName: 'General Admission', basePrice: Math.max(25, baseMin - 4), fee: Math.round(baseMin * 0.16), totalPrice: Math.max(25, baseMin - 4) + Math.round(baseMin * 0.16), availableCount: 28, dealScore: 'Best Value', inStock: true },
-            ],
-          },
-          {
-            platformName: 'DICE',
-            logoColor: '#000000',
-            reliabilityScore: 97,
-            directUrl: 'https://dice.fm',
-            tiers: [
-              { tierName: 'General Admission', basePrice: baseMin, fee: Math.round(baseMin * 0.12), totalPrice: baseMin + Math.round(baseMin * 0.12), availableCount: 16, dealScore: 'Lowest Price', inStock: true },
-            ],
-          },
-        ];
 
         return {
           id: `tm-${ev.id}`,
@@ -169,15 +136,16 @@ async function startServer() {
           doorsOpen: '1 hour before show',
           bannerUrl: bestImage,
           description: ev.info || ev.pleaseNote || `Live performance by ${attractions} at ${venueName} in ${eventCity}, ${eventState}.`,
-          lineup: [
-            { time: rawTime, act: attractions, stage: 'Main Stage' },
-          ],
-          rating: 4.85,
-          reviewsCount: Math.floor(100 + Math.random() * 900),
-          ageRestriction: ev.ageRestrictions?.legalAgeEnforced ? '21+' : 'All Ages',
+          // Ticketmaster's Discovery API gives no stage schedule, ratings, stock, or competitor
+          // prices, so none are invented here: the UI shows only what the source returned.
+          lineup: [],
+          // legalAgeEnforced only says an age limit applies, not which one; absence isn't "All Ages".
+          ageRestriction: ev.ageRestrictions?.legalAgeEnforced ? 'Age-restricted' : 'See event page',
           priceAlertActive: false,
-          tags: [genre || 'Live Event', category, 'Ticketmaster Verified', eventCity],
-          ticketPlatforms,
+          tags: [genre || 'Live Event', category, 'Ticketmaster', eventCity],
+          ticketPlatforms: [],
+          priceRange,
+          ticketUrl: safeHttpsUrl(ev.url),
           isTicketmasterLive: true,
         };
       });

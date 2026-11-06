@@ -5,6 +5,8 @@ import {
   firstString,
   formatEventDate,
   mapTicketmasterCategory,
+  pickPriceRange,
+  safeHttpsUrl,
 } from './ticketmasterMapping.ts';
 
 test('firstString handles strings, arrays and junk', () => {
@@ -58,4 +60,33 @@ test('formatEventDate returns the raw value for anything that is not a real date
   assert.equal(formatEventDate('not-a-date'), 'not-a-date');
   assert.equal(formatEventDate('2026-02-30'), '2026-02-30');
   assert.equal(formatEventDate(''), '');
+});
+
+test('pickPriceRange returns the published range, rounded', () => {
+  assert.deepEqual(pickPriceRange([{ type: 'standard', currency: 'USD', min: 49.5, max: 180.2 }]), {
+    min: 50,
+    max: 180,
+    currency: 'USD',
+  });
+});
+
+test('pickPriceRange skips unusable entries and never invents a price', () => {
+  assert.equal(pickPriceRange(undefined), undefined);
+  assert.equal(pickPriceRange([]), undefined);
+  assert.equal(pickPriceRange('nope'), undefined);
+  assert.equal(pickPriceRange([{ min: 'abc' }, null, { min: -5 }]), undefined);
+  assert.deepEqual(pickPriceRange([{ min: 'abc' }, { min: 20, max: 10, currency: 'cad' }]), {
+    min: 20,
+    max: 20, // max below min is ignored
+    currency: 'CAD',
+  });
+  assert.equal(pickPriceRange([{ min: 10, currency: 'not-a-code' }])?.currency, 'USD');
+});
+
+test('safeHttpsUrl only passes https URLs', () => {
+  assert.equal(safeHttpsUrl('https://www.ticketmaster.com/event/123'), 'https://www.ticketmaster.com/event/123');
+  assert.equal(safeHttpsUrl('http://www.ticketmaster.com/event/123'), undefined);
+  assert.equal(safeHttpsUrl('javascript:alert(1)'), undefined);
+  assert.equal(safeHttpsUrl('not a url'), undefined);
+  assert.equal(safeHttpsUrl(undefined), undefined);
 });
