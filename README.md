@@ -52,7 +52,9 @@ npm start          # Serve the production build
 | `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET` | No | Flight integration template; not connected to the current search flow |
 | `PASSKIT_CLIENT_ID`, `PASSKIT_CLIENT_SECRET` | No | PassKit integration template; not connected to the current search flow |
 
-Affiliate template variables are optional. Without them, approved partner links go directly to the ticket provider.
+Ticketmaster checkout is provider-hosted. If approved for its affiliate program, add your Impact publisher ID to the Ticketmaster Developer Portal profile associated with `TICKETMASTER_API_KEY`; the Discovery API then returns tracked event URLs, which AfterGlow passes through to the provider. Ticketmaster approval and affiliate terms are separate from API key access. Do not invent or append a generic tracking ID. See the [Ticketmaster affiliate FAQ](https://developer.ticketmaster.com/support/faq/).
+
+The seeded events and their multi-platform prices are sample data for the UI. Live Ticketmaster events only show Ticketmaster-provided starting prices when available; final fees and inventory are confirmed by Ticketmaster at checkout. A live listing never creates an AfterGlow wallet pass.
 
 ## Notes
 
