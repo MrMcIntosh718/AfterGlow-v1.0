@@ -128,7 +128,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
       id: `crew-${Date.now()}`,
       name: newCrewName.trim(),
       avatar: randomColor,
-      status: 'confirmed',
+      status: 'maybe',
     };
 
     updateCurrentPlan((p) => ({
@@ -452,7 +452,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                 <Users className="w-4 h-4 text-cyan-400" />
                 Crew & Friends ({activePlan.crew.length})
               </h4>
-              <span className="text-xs text-slate-400">RSVP Confirmed</span>
+              <span className="text-xs text-slate-400">{activePlan.crew.filter((member) => member.status === 'confirmed' || member.status === 'host').length} going · {activePlan.crew.filter((member) => member.status === 'maybe').length} maybe</span>
             </div>
 
             <div className="space-y-2">
@@ -470,7 +470,18 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                     </div>
                     <div>
                       <p className="font-semibold text-white">{member.name}</p>
-                      <p className="text-[10px] text-slate-400 capitalize">{member.status}</p>
+                      {member.status === 'host' ? <p className="text-[10px] text-slate-400">Host</p> : (
+                        <select
+                          aria-label={`${member.name} RSVP`}
+                          value={member.status}
+                          onChange={(e) => updateCurrentPlan((plan) => ({ ...plan, crew: plan.crew.map((person) => person.id === member.id ? { ...person, status: e.target.value as CrewMember['status'] } : person) }))}
+                          className="mt-0.5 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] capitalize text-slate-300 border border-slate-700"
+                        >
+                          <option value="confirmed">Going</option>
+                          <option value="maybe">Maybe</option>
+                          <option value="declined">Can't make it</option>
+                        </select>
+                      )}
                     </div>
                   </div>
 
