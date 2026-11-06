@@ -108,6 +108,8 @@ async function startServer() {
         const eventCity = venueObj.city?.name || 'City TBA';
         const eventState = venueObj.state?.stateCode || venueObj.state?.name || 'US';
         const eventZip = venueObj.postalCode || '';
+        const latitude = Number.parseFloat(venueObj.location?.latitude);
+        const longitude = Number.parseFloat(venueObj.location?.longitude);
 
         // Select highest quality 16_9 image
         const images = ev.images || [];
@@ -174,6 +176,8 @@ async function startServer() {
           city: eventCity,
           state: eventState,
           postalCode: eventZip,
+          latitude: Number.isFinite(latitude) ? latitude : undefined,
+          longitude: Number.isFinite(longitude) ? longitude : undefined,
           date: rawDate,
           formattedDate,
           time: rawTime,
@@ -234,3 +238,4 @@ startServer().catch((err) => {
   console.error('[AfterGlow v1.0] Fatal startup error:', err);
   process.exit(1);
 });
+
