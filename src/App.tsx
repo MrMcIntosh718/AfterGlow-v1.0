@@ -212,9 +212,9 @@ export function App() {
       bannerUrl: event.bannerUrl,
       notes: `Custom itinerary for ${event.title}`,
       schedule: [
-        { id: `s-${Date.now()}-1`, time: 'Before event', title: 'Meetup (add a place)', type: 'pre-party', location: 'Choose a meetup location' },
+        { id: `s-${Date.now()}-1`, time: 'Before event', title: 'Meetup (add a place)', type: 'pre-party', location: '' },
         { id: `s-${Date.now()}-2`, time: event.time, title: `${event.artistOrPerformer} · Main event`, type: 'main', location: event.venue },
-        { id: `s-${Date.now()}-3`, time: 'After event', title: 'After-event plans (add a place)', type: 'afterglow', location: 'Choose an after-event location' },
+        { id: `s-${Date.now()}-3`, time: 'After event', title: 'After-event plans (add a place)', type: 'afterglow', location: '' },
       ],
       crew: [
         { id: `crew-${Date.now()}`, name: 'You (Host)', avatar: '#f43f5e', status: 'host' },
