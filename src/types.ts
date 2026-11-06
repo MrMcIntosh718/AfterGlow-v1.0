@@ -77,7 +77,7 @@ export interface CrewMember {
   id: string;
   name: string;
   avatar: string;
-  status: 'confirmed' | 'maybe' | 'host';
+  status: 'confirmed' | 'maybe' | 'declined' | 'host';
   phone?: string;
 }
 
@@ -109,6 +109,7 @@ export interface EventItinerary {
   schedule: ItineraryScheduleItem[];
   crew: CrewMember[];
   expenses: ExpenseItem[];
+  perPersonBudget?: number;
   checklist: ChecklistItem[];
 }
 
