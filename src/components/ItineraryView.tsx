@@ -171,17 +171,40 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  // Share text summary
-  const handleShareSummary = () => {
+  const getDirectionsUrl = (location: string) =>
+    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location}, ${activePlan.eventCity}`)}`;
+
+  // Share event details and schedule, leaving personal crew and expense data out.
+  const handleShareSummary = async () => {
     const scheduleSummary = activePlan.schedule
-      .map((s) => `• ${s.time} - ${s.title} (${s.location})`)
+      .map((item) => `• ${item.time} — ${item.title} (${item.location || activePlan.eventVenue})\n  Directions: ${getDirectionsUrl(item.location || activePlan.eventVenue)}`)
       .join('\n');
 
-    const text = `🎉 AFTERGLOW EVENT PLAN: ${activePlan.eventTitle}\n📅 ${activePlan.eventDate} @ ${activePlan.eventVenue}\n\nSchedule:\n${scheduleSummary}\n\nCrew: ${activePlan.crew.map((c) => c.name).join(', ')}`;
+    const text = `AFTERGLOW PLAN — ${activePlan.eventTitle}\n${activePlan.eventDate}\n${activePlan.eventVenue}, ${activePlan.eventCity}\nDirections: ${getDirectionsUrl(activePlan.eventVenue)}\n\nSCHEDULE\n${scheduleSummary}\n\nTicket purchase and final prices are handled by the provider.`;
 
-    navigator.clipboard.writeText(text);
-    setCopiedToast(true);
-    setTimeout(() => setCopiedToast(false), 3000);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `AfterGlow: ${activePlan.eventTitle}`, text });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const field = document.createElement('textarea');
+        field.value = text;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.select();
+        const copied = document.execCommand('copy');
+        field.remove();
+        if (!copied) throw new Error('Clipboard unavailable');
+      }
+      setCopiedToast(true);
+      setTimeout(() => setCopiedToast(false), 3000);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      setCopiedToast(false);
+    }
   };
 
   return (
@@ -247,6 +270,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                     <MapPin className="w-3.5 h-3.5 text-cyan-400" />
                     {activePlan.eventVenue}, {activePlan.eventCity}
                   </span>
+                  <a href={getDirectionsUrl(activePlan.eventVenue)} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:text-white underline underline-offset-2">Directions</a>
                 </div>
               </div>
 
@@ -274,7 +298,7 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
             {copiedToast && (
               <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2 animate-fade-in">
                 <Sparkles className="w-4 h-4" />
-                <span>Itinerary plan copied to clipboard! Ready to paste into group chat.</span>
+                <span>Share the plan and venue directions. Crew and expense details stay private.</span>
               </div>
             )}
 
@@ -394,10 +418,10 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                             {item.title}
                           </h5>
                           {item.location && (
-                            <p className="text-xs text-slate-400 flex items-center gap-1">
+                            <a href={getDirectionsUrl(item.location)} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-300 hover:text-white flex items-center gap-1 underline underline-offset-2">
                               <MapPin className="w-3 h-3 text-slate-500" />
-                              {item.location}
-                            </p>
+                              {item.location} · Directions
+                            </a>
                           )}
                         </div>
 
