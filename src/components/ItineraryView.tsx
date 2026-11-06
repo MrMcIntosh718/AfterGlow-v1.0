@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, MapPin, Plus, Trash2, CheckSquare, Square, Users, Download, Share2, Sparkles, AlertCircle } from 'lucide-react';
 import { EventItinerary, ItineraryScheduleItem, CrewMember, ChecklistItem } from '../types';
+import { getPackingSuggestions, TravelMode } from '../data/packingSuggestions';
 
 interface ItineraryViewProps {
   itineraries: EventItinerary[];
@@ -114,6 +115,21 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
       checklist: [...p.checklist, newItem],
     }));
     setNewChecklistText('');
+  };
+
+  const handleBuildPackList = () => {
+    const suggestions = getPackingSuggestions(activePlan.eventCategory, activePlan.travelMode || 'local');
+    updateCurrentPlan((plan) => {
+      const existing = new Set(plan.checklist.map((item) => item.text.trim().toLowerCase()));
+      const additions = suggestions
+        .filter((suggestion) => !existing.has(suggestion.text.toLowerCase()))
+        .map((suggestion, index) => ({
+          ...suggestion,
+          id: `pack-${Date.now()}-${index}`,
+          done: false,
+        }));
+      return { ...plan, checklist: [...plan.checklist, ...additions] };
+    });
   };
 
   // Crew operations
@@ -528,6 +544,28 @@ export const ItineraryView: React.FC<ItineraryViewProps> = ({
                 {activePlan.checklist.filter((c) => c.done).length}/{activePlan.checklist.length} Done
               </span>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className="sr-only" htmlFor="pack-travel-mode">Travel mode</label>
+              <select
+                id="pack-travel-mode"
+                value={activePlan.travelMode || 'local'}
+                onChange={(e) => updateCurrentPlan((plan) => ({ ...plan, travelMode: e.target.value as TravelMode }))}
+                className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="local">Getting there locally</option>
+                <option value="roadtrip">Road trip</option>
+                <option value="flying">Flying</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleBuildPackList}
+                className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500"
+              >
+                Build my pack list
+              </button>
+            </div>
+            <p className="-mt-2 text-[10px] text-slate-500">Suggestions use event type and travel mode. Check venue rules before buying or packing restricted items.</p>
 
             <div className="space-y-1.5 max-h-56 overflow-y-auto">
               {activePlan.checklist.map((item) => (
