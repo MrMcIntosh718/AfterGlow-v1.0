@@ -337,6 +337,18 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
               <option value="date">Soonest Date</option>
               <option value="rating">Top Fan Rated</option>
             </select>
+            <button
+              type="button"
+              disabled={filteredEvents.length === 0}
+              onClick={() => {
+                const event = filteredEvents[Math.floor(Math.random() * filteredEvents.length)];
+                if (event) onOpenDetailModal(event);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-200 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Pick a surprise from your current search and filters"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Surprise me
+            </button>
           </div>
 
         </div>
