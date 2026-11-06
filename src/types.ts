@@ -45,6 +45,8 @@ export interface EventItem {
   city: string;
   state: string;
   postalCode: string; // ZIP / Postal code e.g. '10001', '78701'
+  latitude?: number;
+  longitude?: number;
   date: string; // YYYY-MM-DD
   formattedDate: string;
   time: string;
@@ -130,3 +132,4 @@ export interface UserPass {
   holderName: string;
   purchasedAt: string;
 }
+

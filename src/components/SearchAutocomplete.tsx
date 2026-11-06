@@ -52,24 +52,10 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   const suggestions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    // Default suggestions when search input is empty or focused
-    if (!q) {
-      return [
-        { type: 'zip', title: '10001', subtitle: 'New York, NY (Midtown / MSG)', value: '10001' },
-        { type: 'zip', title: '78701', subtitle: 'Austin, TX (Downtown / ACL Live)', value: '78701' },
-        { type: 'zip', title: '90071', subtitle: 'Los Angeles, CA (Downtown / Rooftops)', value: '90071' },
-        { type: 'zip', title: '80465', subtitle: 'Morrison / Denver, CO (Red Rocks)', value: '80465' },
-        { type: 'city', title: 'New York, NY', subtitle: 'Brooklyn Mirage, MSG, Comedy Cellar', value: 'New York, NY' },
-        { type: 'city', title: 'Los Angeles, CA', subtitle: 'Forum, Standard Rooftop', value: 'Los Angeles, CA' },
-        { type: 'artist', title: 'Rufus Du Sol', subtitle: 'Electronic / Melodic House & Techno', value: 'Rufus Du Sol' },
-        { type: 'artist', title: 'Dua Lipa', subtitle: 'Pop / Radical Optimism Tour', value: 'Dua Lipa' },
-      ] as SuggestionItem[];
-    }
+    if (!q) return [];
 
     const items: SuggestionItem[] = [];
     const seen = new Set<string>();
-
-    const isNumeric = /^\d+$/.test(q);
 
     // 1. ZIP Code / Postal Code matches
     events.forEach((e) => {
@@ -236,6 +222,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           type="text"
           placeholder={placeholder}
           value={searchQuery}
+          style={{ color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#fb7185' }}
           onFocus={() => setIsOpen(true)}
           onChange={(e) => {
             setSearchQuery(e.target.value);
@@ -243,7 +230,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             setSelectedIndex(-1);
           }}
           onKeyDown={handleKeyDown}
-          className="w-full pl-10 pr-24 py-2.5 bg-slate-900/90 text-sm text-slate-100 placeholder-slate-500 rounded-xl border border-slate-700/70 focus:outline-none focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/50 transition-all shadow-inner"
+          className="w-full pl-10 pr-24 py-2.5 bg-slate-950 text-sm text-white placeholder:text-slate-400 rounded-xl border border-slate-700/70 focus:outline-none focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/50 transition-all shadow-inner"
         />
 
         {/* Clear & Status badges inside input */}
@@ -285,7 +272,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           {/* Top header bar in dropdown */}
           <div className="px-4 py-2 bg-slate-900/80 border-b border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
             <span className="font-semibold uppercase tracking-wider text-slate-500">
-              {searchQuery ? 'Matching Suggestions' : 'Popular Hubs & ZIPs'}
+              {searchQuery ? 'Matching Suggestions' : 'Search events and locations'}
             </span>
             <span className="flex items-center gap-1.5 text-slate-300">
               <span className={`w-1.5 h-1.5 rounded-full ${isTicketmasterConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
@@ -299,7 +286,9 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
           <div className="overflow-y-auto divide-y divide-slate-800/40 py-1">
             {suggestions.length === 0 ? (
               <div className="p-4 text-center text-xs text-slate-400">
-                No instant match. Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-white font-mono">Enter</kbd> to search across all event details.
+                {searchQuery.trim() ? (
+                  <>No instant match. Press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-white font-mono">Enter</kbd> to search all events.</>
+                ) : 'Type an artist, event, city, state, or ZIP code.'}
               </div>
             ) : (
               suggestions.map((item, idx) => {
@@ -344,9 +333,8 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
             )}
           </div>
 
-          {/* Quick ZIP guide footer */}
           <div className="p-2.5 bg-slate-900/60 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between px-4">
-            <span>Tip: Enter any 5-digit ZIP code to filter venue locations directly</span>
+            <span>Search by artist, venue, city, state, or ZIP code</span>
             <span className="text-[10px] text-slate-500">↑↓ to navigate • ↵ to select</span>
           </div>
 
@@ -356,3 +344,4 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     </div>
   );
 };
+

@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // NEXT_PUBLIC_ variables are explicitly documented as browser-safe in this project.
+  // Do not add server-only prefixes such as MAPBOX_ACCESS_TOKEN here.
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   plugins: [
     react(),
     tailwindcss(),
@@ -15,3 +18,4 @@ export default defineConfig({
     hmr: false,
   },
 });
+
