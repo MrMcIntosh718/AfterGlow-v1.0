@@ -44,6 +44,9 @@ const VALID_STATE_CODES = new Set(Object.values(US_STATE_CODES));
 export function parseTicketmasterSearch(query: string): { keyword?: string; postalCode?: string; city?: string; stateCode?: string } {
   const trimmed = query.trim();
   if (/^\d{5}$/.test(trimmed)) return { postalCode: trimmed };
+  if (trimmed.length === 2 && VALID_STATE_CODES.has(trimmed.toUpperCase())) return { stateCode: trimmed.toUpperCase() };
+  const stateOnly = US_STATE_CODES[trimmed.toLowerCase()];
+  if (stateOnly) return { stateCode: stateOnly };
 
   const commaParts = trimmed.split(',').map((part) => part.trim()).filter(Boolean);
   if (commaParts.length === 2) {
