@@ -8,6 +8,9 @@ Afterglow helps people discover live events and plan road trips around them. The
 - Browse event locations on an interactive map
 - Build multi-city road trip itineraries and calculate driving legs
 - Share event plans with Google Maps directions for each stop
+- Pick a surprise event from the current search and filter results
+- Track crew RSVPs for each event plan on the organizer's device
+- Set a per-person budget cap against recorded shared expenses
 - Send ticket clicks through a partner-domain-validated redirect
 
 ## Requirements
