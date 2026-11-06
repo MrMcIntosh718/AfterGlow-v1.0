@@ -85,6 +85,29 @@ export const TicketModal: React.FC<TicketModalProps> = ({
     setPurchaseStep('success');
   };
 
+  if (event.isTicketmasterLive) {
+    const providerUrl = event.ticketPlatforms.find((platform) => platform.platformName === 'Ticketmaster')?.directUrl || 'https://www.ticketmaster.com';
+    const startingPrice = allTiers.length ? Math.min(...allTiers.map((tier) => tier.totalPrice)) : null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Ticketmaster checkout">
+        <div className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-[#0f121d] p-6 text-white shadow-2xl">
+          <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 rounded-full p-2 text-slate-300 hover:bg-slate-800 hover:text-white"><X className="h-5 w-5" /></button>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-300">Ticketmaster event</p>
+          <h2 className="pr-10 text-xl font-bold">{event.title}</h2>
+          <p className="mt-2 text-sm text-slate-300">{event.venue}, {event.city} • {event.formattedDate}</p>
+          <p className="mt-5 rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-300">
+            {startingPrice === null ? 'Check Ticketmaster for current ticket prices and availability.' : `Starting price shown by Ticketmaster: ${startingPrice}. Final fees and availability are confirmed at checkout.`}
+          </p>
+          <a href={providerUrl} target="_blank" rel="noopener noreferrer" className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-500">
+            Continue to Ticketmaster <ExternalLink className="h-4 w-4" />
+          </a>
+          <p className="mt-3 text-center text-[11px] text-slate-500">Ticket purchase is completed with the ticket provider.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/80 backdrop-blur-md">
       <div className="relative w-full max-w-4xl bg-[#0f121d] border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
@@ -108,10 +131,10 @@ export const TicketModal: React.FC<TicketModalProps> = ({
           <div className="absolute bottom-3 left-4 right-16">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                Ticket Aggregator Engine
+                Sample offers · demo data
               </span>
               <span className="text-xs text-slate-400">
-                Live Multi-Platform Fee Transparency
+                Demo purchase simulation
               </span>
             </div>
             <h2 className="text-lg sm:text-2xl font-bold text-white truncate font-display">
@@ -351,12 +374,12 @@ export const TicketModal: React.FC<TicketModalProps> = ({
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">
                 <Check className="w-8 h-8 stroke-[3]" />
               </div>
-              <h3 className="text-2xl font-bold text-white font-display">Pass Confirmed & Added!</h3>
+              <h3 className="text-2xl font-bold text-white font-display">Demo Pass Added</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
-                Your ticket pass for <span className="text-rose-400 font-semibold">{event.title}</span> has been saved to your AfterGlow digital wallet.
+                This is a sample pass for <span className="text-rose-400 font-semibold">{event.title}</span>. No ticket was purchased or issued.
               </p>
               <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 inline-block text-xs text-slate-400">
-                You can view the interactive QR entry code, barcode, and door countdown in the <b className="text-white">Passes</b> tab anytime!
+                Sample pass details are saved in the <b className="text-white">Passes</b> tab for preview.
               </div>
             </div>
           )}
@@ -387,7 +410,7 @@ export const TicketModal: React.FC<TicketModalProps> = ({
                   onClick={() => setPurchaseStep('confirm')}
                   className="flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white rounded-xl shadow-lg shadow-rose-500/25 transition-all"
                 >
-                  <span>Lock In Deal • ${selectedPlatformItem ? selectedPlatformItem.tier!.totalPrice * quantity : 0}</span>
+                  <span>Simulate Demo Pass • ${selectedPlatformItem ? selectedPlatformItem.tier!.totalPrice * quantity : 0}</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
