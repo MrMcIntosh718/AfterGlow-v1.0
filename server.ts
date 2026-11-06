@@ -165,10 +165,8 @@ async function startServer() {
           'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80';
 
         // Pricing extraction
-        const priceRange = ev.priceRanges?.[0] || { min: 45, max: 180 };
-        const baseMin = Math.round(priceRange.min) || 49;
-        const tmFee = Math.round(baseMin * 0.22);
-        const tmTotal = baseMin + tmFee;
+        const priceRange = ev.priceRanges?.[0];
+        const startingPrice = Number.isFinite(Number(priceRange?.min)) ? Math.round(Number(priceRange.min)) : null;
 
         // Formatted dates
         const rawDate = ev.dates?.start?.localDate || '2026-08-01';
@@ -182,37 +180,22 @@ async function startServer() {
 
         const attractions = ev._embedded?.attractions?.map((a: any) => a.name).join(', ') || ev.name;
 
-        // Build Ticketmaster listing plus aggregated competitors comparison
-        const ticketPlatforms = [
-          {
-            platformName: 'Ticketmaster',
-            logoColor: '#026cdf',
-            reliabilityScore: 99,
-            directUrl: ev.url || 'https://ticketmaster.com',
-            tiers: [
-              { tierName: 'General Admission', basePrice: baseMin, fee: tmFee, totalPrice: tmTotal, availableCount: 50, dealScore: 'Standard', inStock: true },
-              { tierName: 'VIP Pit / Lounge', basePrice: Math.round(baseMin * 2.2), fee: Math.round(baseMin * 2.2 * 0.24), totalPrice: Math.round(baseMin * 2.2 * 1.24), availableCount: 12, dealScore: 'VIP Pick', inStock: true },
-            ],
-          },
-          {
-            platformName: 'SeatGeek',
-            logoColor: '#f05323',
-            reliabilityScore: 98,
-            directUrl: 'https://seatgeek.com',
-            tiers: [
-              { tierName: 'General Admission', basePrice: Math.max(25, baseMin - 4), fee: Math.round(baseMin * 0.16), totalPrice: Math.max(25, baseMin - 4) + Math.round(baseMin * 0.16), availableCount: 28, dealScore: 'Best Value', inStock: true },
-            ],
-          },
-          {
-            platformName: 'DICE',
-            logoColor: '#000000',
-            reliabilityScore: 97,
-            directUrl: 'https://dice.fm',
-            tiers: [
-              { tierName: 'General Admission', basePrice: baseMin, fee: Math.round(baseMin * 0.12), totalPrice: baseMin + Math.round(baseMin * 0.12), availableCount: 16, dealScore: 'Lowest Price', inStock: true },
-            ],
-          },
-        ];
+        // Only show price data returned by Ticketmaster; fees and inventory are not inferred.
+        const ticketPlatforms = [{
+          platformName: 'Ticketmaster',
+          logoColor: '#026cdf',
+          reliabilityScore: 99,
+          directUrl: ev.url || 'https://ticketmaster.com',
+          tiers: startingPrice === null ? [] : [{
+            tierName: 'General Admission',
+            basePrice: startingPrice,
+            fee: 0,
+            totalPrice: startingPrice,
+            availableCount: 0,
+            dealScore: 'Standard',
+            inStock: true,
+          }],
+        }];
 
         return {
           id: `tm-${ev.id}`,
@@ -228,15 +211,15 @@ async function startServer() {
           date: rawDate,
           formattedDate,
           time: rawTime,
-          doorsOpen: '1 hour before show',
+          doorsOpen: 'See Ticketmaster listing',
           bannerUrl: bestImage,
           description: ev.info || ev.pleaseNote || `Live performance by ${attractions} at ${venueName} in ${eventCity}, ${eventState}.`,
           lineup: [
             { time: rawTime, act: attractions, stage: 'Main Stage' },
           ],
-          rating: 4.85,
-          reviewsCount: Math.floor(100 + Math.random() * 900),
-          ageRestriction: ev.ageRestrictions?.legalAgeEnforced ? '21+' : 'All Ages',
+          rating: 0,
+          reviewsCount: 0,
+          ageRestriction: ev.ageRestrictions?.legalAgeEnforced ? '21+' : 'Not listed',
           priceAlertActive: false,
           tags: [genre || 'Live Event', category, 'Ticketmaster Verified', eventCity],
           ticketPlatforms,
