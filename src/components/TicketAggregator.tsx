@@ -102,9 +102,9 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
   }, [events]);
 
   // Compute lowest price helper
-  const getMinPrice = (event: EventItem) => {
+  const getMinPrice = (event: EventItem): number | null => {
     const allTiers = event.ticketPlatforms.flatMap((p) => p.tiers);
-    return Math.min(...allTiers.map((t) => t.totalPrice));
+    return allTiers.length ? Math.min(...allTiers.map((t) => t.totalPrice)) : null;
   };
 
   // Filter & sort
@@ -118,7 +118,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
 
       // Max price filter
       const minPrice = getMinPrice(e);
-      if (minPrice > maxPrice) return false;
+      if (minPrice !== null && minPrice > maxPrice) return false;
 
       // Cleaned search query
       const trimmedQuery = searchQuery.trim().toLowerCase();
@@ -200,7 +200,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
       return true;
     }).sort((a, b) => {
       if (sortBy === 'price-asc') {
-        return getMinPrice(a) - getMinPrice(b);
+        return (getMinPrice(a) ?? Number.MAX_SAFE_INTEGER) - (getMinPrice(b) ?? Number.MAX_SAFE_INTEGER);
       }
       if (sortBy === 'rating') {
         return b.rating - a.rating;
@@ -209,7 +209,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
         return a.date.localeCompare(b.date);
       }
       // 'deal' default: combination of rating and price
-      return (b.rating * 100 - getMinPrice(b)) - (a.rating * 100 - getMinPrice(a));
+      return (b.rating * 100 - (getMinPrice(b) ?? 100000)) - (a.rating * 100 - (getMinPrice(a) ?? 100000));
     });
   }, [events, selectedCategory, selectedCity, maxPrice, searchQuery, sortBy, showSavedOnly, savedSet]);
 
@@ -224,25 +224,25 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
         <div className="relative max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-            <span>Never Overpay for Live Experiences</span>
+            <span>Live Events & Nights Out</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white font-display tracking-tight leading-[1.15]">
             Discover Premier Events.<br />
-            <span className="text-gradient-rose">Aggregate Tickets.</span> Plan the <span className="text-gradient-amber">AfterGlow.</span>
+            <span className="text-gradient-rose">Find Your Event.</span> Plan the <span className="text-gradient-amber">AfterGlow.</span>
           </h1>
 
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Direct real-time comparison across SeatGeek, Ticketmaster, DICE, StubHub & VividSeats with 100% fee transparency, integrated group timeline planning, and digital wallet passes.
+            Discover live Ticketmaster events alongside sample listings. Search by location, explore the map, and build a group itinerary. Ticket prices and checkout are confirmed with the provider.
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-              <ShieldCheck className="w-4 h-4" /> Zero Hidden Checkout Fees
+            <span className="flex items-center gap-1.5 text-slate-300 font-medium">
+              <ShieldCheck className="w-4 h-4" /> Provider pricing and checkout
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5 text-slate-300">
-              <Ticket className="w-4 h-4 text-rose-400" /> 7 Major Ticket Exchanges
+              <Ticket className="w-4 h-4 text-rose-400" /> Live Ticketmaster Discovery
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5 text-slate-300">
@@ -441,7 +441,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
             const isInPlanner = itineraryEventIds.includes(event.id);
 
             // Platform price summary tags
-            const platformPrices = event.ticketPlatforms.map((p) => {
+            const platformPrices = event.ticketPlatforms.filter((p) => p.tiers.length > 0).map((p) => {
               const lowestTier = Math.min(...p.tiers.map((t) => t.totalPrice));
               return { name: p.platformName, price: lowestTier };
             }).sort((a, b) => a.price - b.price);
@@ -518,10 +518,12 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                   </button>
 
                   {/* Rating on image */}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-xs text-amber-400 font-semibold bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md">
-                    <Star className="w-3 h-3 fill-current" />
-                    <span>{event.rating}</span>
-                  </div>
+                  {event.rating > 0 && event.reviewsCount > 0 && (
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1 text-xs text-amber-400 font-semibold bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md">
+                      <Star className="w-3 h-3 fill-current" />
+                      <span>{event.rating}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Content */}
@@ -559,11 +561,11 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                     {/* Platform comparison price chips */}
                     <div className="pt-2">
                       <div className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1 flex items-center justify-between">
-                        <span>Aggregated Best Prices</span>
-                        <span className="text-emerald-400 font-normal">Fees incl.</span>
+                        <span>{event.isTicketmasterLive ? 'Ticketmaster listing' : 'Sample offers • demo data'}</span>
+                        {event.isTicketmasterLive && <span className="text-slate-400 font-normal">Fees at checkout</span>}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {platformPrices.map((item, idx) => (
+                        {platformPrices.length === 0 ? <span className="text-xs text-slate-400">Check provider for current pricing and availability.</span> : platformPrices.map((item, idx) => (
                           <span
                             key={item.name}
                             className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
@@ -583,9 +585,9 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                   {/* Card Action Footer */}
                   <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-500 block">From</span>
+                      <span className="text-[10px] text-slate-500 block">{minPrice === null ? 'Ticket price' : event.isTicketmasterLive ? 'Starting price' : 'Sample from'}</span>
                       <span className="text-lg font-bold font-display text-white">
-                        ${minPrice}
+                        {minPrice === null ? 'Check provider' : `${minPrice}`}
                       </span>
                     </div>
 
@@ -611,7 +613,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
                         className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:brightness-110 active:scale-95 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all"
                       >
                         <Ticket className="w-3.5 h-3.5" />
-                        <span>Compare & Buy</span>
+                        <span>{event.isTicketmasterLive ? 'View Tickets' : 'View Demo Offers'}</span>
                       </button>
                     </div>
                   </div>
