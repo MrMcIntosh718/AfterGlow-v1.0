@@ -1,6 +1,6 @@
 # Afterglow
 
-Afterglow helps people discover live events and plan road trips around them. It is built with Next.js, React, and TypeScript.
+Afterglow helps people discover live events and plan road trips around them. The runnable app uses Vite, Express, React, and TypeScript.
 
 ## Features
 
@@ -11,7 +11,7 @@ Afterglow helps people discover live events and plan road trips around them. It 
 
 ## Requirements
 
-- Node.js 20.9 or later (required by Next.js 16)
+- Node.js 20.9 or later
 - npm
 - A Ticketmaster Discovery API key
 
@@ -36,7 +36,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm run dev        # Start the local development server
-npm run typecheck  # Check TypeScript types
+npm run lint       # Check TypeScript types
 npm run build      # Create a production build
 npm start          # Serve the production build
 ```

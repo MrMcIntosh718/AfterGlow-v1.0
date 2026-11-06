@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -9,6 +9,10 @@ import {
   formatEventDate,
   mapTicketmasterCategory,
 } from './src/shared/ticketmasterMapping.ts';
+
+// Load the documented local secrets file first; then allow a plain .env to fill unset values.
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +51,8 @@ async function startServer() {
     const city = firstString(req.query.city);
     const stateCode = firstString(req.query.stateCode);
     const size = clampPageSize(req.query.size);
+    const requestedPage = Number.parseInt(firstString(req.query.page), 10);
+    const page = Number.isFinite(requestedPage) ? Math.max(0, Math.min(requestedPage, 1000)) : 0;
 
     if (!key) {
       return res.status(200).json({
@@ -61,7 +67,12 @@ async function startServer() {
       const url = new URL('https://app.ticketmaster.com/discovery/v2/events.json');
       url.searchParams.set('apikey', key);
       url.searchParams.set('size', size);
+      url.searchParams.set('page', String(page));
       url.searchParams.set('sort', 'date,asc');
+      const startDate = new Date();
+      const endDate = new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+      url.searchParams.set('startDateTime', startDate.toISOString().replace(/\.\d{3}Z$/, 'Z'));
+      url.searchParams.set('endDateTime', endDate.toISOString().replace(/\.\d{3}Z$/, 'Z'));
 
       if (keyword) url.searchParams.set('keyword', keyword);
       if (postalCode) url.searchParams.set('postalCode', postalCode);
@@ -186,6 +197,8 @@ async function startServer() {
         success: true,
         connected: true,
         count: transformedEvents.length,
+        page: data.page?.number ?? page,
+        totalPages: data.page?.totalPages ?? 0,
         events: transformedEvents,
       });
     } catch (err: any) {

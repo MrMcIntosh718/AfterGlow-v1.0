@@ -32,7 +32,8 @@ export async function fetchTicketmasterEvents(params: {
   city?: string;
   stateCode?: string;
   size?: string;
-}): Promise<{ success: boolean; events: EventItem[]; message?: string }> {
+  page?: number;
+}): Promise<{ success: boolean; events: EventItem[]; message?: string; page?: number; totalPages?: number }> {
   try {
     const searchParams = new URLSearchParams();
     if (params.keyword) searchParams.set('keyword', params.keyword);
@@ -40,6 +41,7 @@ export async function fetchTicketmasterEvents(params: {
     if (params.city) searchParams.set('city', params.city);
     if (params.stateCode) searchParams.set('stateCode', params.stateCode);
     if (params.size) searchParams.set('size', params.size);
+    if (params.page !== undefined) searchParams.set('page', String(params.page));
 
     const res = await fetch(`/api/ticketmaster/events?${searchParams.toString()}`);
     if (!res.ok) {
@@ -50,6 +52,8 @@ export async function fetchTicketmasterEvents(params: {
       success: data.success ?? true,
       events: data.events || [],
       message: data.message,
+      page: data.page,
+      totalPages: data.totalPages,
     };
   } catch (err: any) {
     console.warn('[Ticketmaster Fetch Error]', err);

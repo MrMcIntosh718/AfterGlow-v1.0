@@ -19,7 +19,10 @@ interface TicketAggregatorProps {
   itineraryEventIds: string[];
   isTicketmasterConnected?: boolean;
   isSearchingTicketmaster?: boolean;
-  onRefreshTicketmaster?: () => void;
+  onRefreshTicketmaster?: (query?: string) => void;
+  onSubmitSearch?: (query: string) => void;
+  onLoadMore?: () => void;
+  hasMoreTicketmasterEvents?: boolean;
 }
 
 export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
@@ -36,6 +39,9 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
   isTicketmasterConnected = false,
   isSearchingTicketmaster = false,
   onRefreshTicketmaster,
+  onSubmitSearch,
+  onLoadMore,
+  hasMoreTicketmasterEvents = false,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedCity, setSelectedCity] = useState<string>('All');
@@ -345,6 +351,7 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
               onSelectSuggestion={(val) => setSearchQuery(val)}
               isTicketmasterConnected={isTicketmasterConnected}
               isSearchingTicketmaster={isSearchingTicketmaster}
+              onSubmitSearch={onSubmitSearch || onRefreshTicketmaster}
               placeholder="Search by artist, venue, city, state, or 5-digit ZIP code (e.g. 10001, 78701)..."
             />
           </div>
@@ -635,6 +642,18 @@ export const TicketAggregator: React.FC<TicketAggregatorProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {hasMoreTicketmasterEvents && onLoadMore && (
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={onLoadMore}
+            disabled={isSearchingTicketmaster}
+            className="px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-sm font-semibold text-slate-200 hover:border-rose-500/50 hover:text-white disabled:opacity-50 transition-colors"
+          >
+            {isSearchingTicketmaster ? 'Loading events…' : 'Load more upcoming events'}
+          </button>
         </div>
       )}
 

@@ -11,6 +11,7 @@ import { INITIAL_EVENTS } from './data/mockEvents';
 import { EventItem, EventItinerary, UserPass } from './types';
 import { Sparkles, Heart } from 'lucide-react';
 import { checkTicketmasterStatus, fetchTicketmasterEvents } from './services/ticketmaster';
+import { parseTicketmasterSearch } from './shared/ticketmasterMapping';
 
 const INITIAL_ITINERARY: EventItinerary = {
   id: 'plan-mirage-fest',
@@ -103,6 +104,8 @@ export function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isTicketmasterConnected, setIsTicketmasterConnected] = useState(false);
   const [isSearchingTicketmaster, setIsSearchingTicketmaster] = useState(false);
+  const [ticketmasterPage, setTicketmasterPage] = useState(0);
+  const [ticketmasterTotalPages, setTicketmasterTotalPages] = useState(0);
 
   // Check Ticketmaster API connectivity on startup
   useEffect(() => {
@@ -113,13 +116,17 @@ export function App() {
         if (status.connected) {
           showToast('Ticketmaster Discovery API v2 connected! Live inventory active.');
           setIsSearchingTicketmaster(true);
-          fetchTicketmasterEvents({ size: '10' }).then((res) => {
+          fetchTicketmasterEvents({ size: '20' }).then((res) => {
             if (isMounted && res.success && res.events.length > 0) {
               setEvents((prev) => {
                 const existingIds = new Set(prev.map((e) => e.id));
                 const newOnes = res.events.filter((e) => !existingIds.has(e.id));
                 return [...newOnes, ...prev];
               });
+            }
+            if (isMounted) {
+              setTicketmasterPage(res.page ?? 0);
+              setTicketmasterTotalPages(res.totalPages ?? 0);
             }
             if (isMounted) setIsSearchingTicketmaster(false);
           });
@@ -150,29 +157,34 @@ export function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleRefreshTicketmaster = async () => {
+  const handleRefreshTicketmaster = async (query = searchQuery, page = 0) => {
     setIsSearchingTicketmaster(true);
-    showToast('Checking Ticketmaster Discovery API for live events & ZIP matches...');
-    
-    const trimmed = searchQuery.trim();
-    const isZip = /^\d{5}$/.test(trimmed);
+    const trimmed = query.trim();
+    showToast(trimmed ? `Searching upcoming events for “${trimmed}”…` : 'Loading upcoming live events…');
     const res = await fetchTicketmasterEvents({
-      postalCode: isZip ? trimmed : undefined,
-      keyword: !isZip && trimmed ? trimmed : undefined,
+      ...parseTicketmasterSearch(trimmed),
+      size: '20',
+      page,
     });
 
     setIsSearchingTicketmaster(false);
+    if (!res.success) {
+      showToast(res.message || 'Ticketmaster search failed. Please try again.');
+      return;
+    }
+    setTicketmasterPage(res.page ?? page);
+    setTicketmasterTotalPages(res.totalPages ?? 0);
     if (res.success && res.events.length > 0) {
       setEvents((prev) => {
         const existingIds = new Set(prev.map((e) => e.id));
         const newOnes = res.events.filter((e) => !existingIds.has(e.id));
         return [...newOnes, ...prev];
       });
-      showToast(`Loaded ${res.events.length} live Ticketmaster events!`);
+      showToast(`Found ${res.events.length} upcoming Ticketmaster events.`);
     } else if (!isTicketmasterConnected) {
-      showToast('Ticketmaster API ready in aggregator mode. Configured via TICKETMASTER_API_KEY.');
+      showToast('Live event search is disconnected. Configure TICKETMASTER_API_KEY to search Ticketmaster.');
     } else {
-      showToast('Ticketmaster query finished — catalogue up to date.');
+      showToast('No upcoming events matched. Try a broader keyword, nearby city, or ZIP code.');
     }
   };
 
@@ -297,6 +309,9 @@ export function App() {
             isTicketmasterConnected={isTicketmasterConnected}
             isSearchingTicketmaster={isSearchingTicketmaster}
             onRefreshTicketmaster={handleRefreshTicketmaster}
+            onSubmitSearch={(query) => handleRefreshTicketmaster(query, 0)}
+            onLoadMore={() => handleRefreshTicketmaster(searchQuery, ticketmasterPage + 1)}
+            hasMoreTicketmasterEvents={ticketmasterPage + 1 < ticketmasterTotalPages}
           />
         )}
 

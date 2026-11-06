@@ -16,6 +16,7 @@ interface SearchAutocompleteProps {
   onSelectSuggestion?: (value: string) => void;
   isTicketmasterConnected?: boolean;
   isSearchingTicketmaster?: boolean;
+  onSubmitSearch?: (query: string) => void;
   placeholder?: string;
   className?: string;
 }
@@ -27,6 +28,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
   onSelectSuggestion,
   isTicketmasterConnected = false,
   isSearchingTicketmaster = false,
+  onSubmitSearch,
   placeholder = 'Search by artist, venue, city, state, or ZIP code (e.g. 10001, Austin TX)...',
   className = '',
 }) => {
@@ -163,12 +165,16 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
     if (onSelectSuggestion) {
       onSelectSuggestion(val);
     }
+    onSubmitSearch?.(val);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      if (e.key === 'ArrowDown') {
         setIsOpen(true);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        onSubmitSearch?.(searchQuery);
       }
       return;
     }
@@ -184,6 +190,7 @@ export const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
       if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
         handleSelect(suggestions[selectedIndex].value);
       } else {
+        onSubmitSearch?.(searchQuery);
         setIsOpen(false);
       }
     } else if (e.key === 'Escape') {
