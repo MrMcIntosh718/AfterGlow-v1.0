@@ -33,6 +33,7 @@ export async function fetchTicketmasterEvents(params: {
   stateCode?: string;
   size?: string;
   page?: number;
+  radius?: number;
 }): Promise<{ success: boolean; events: EventItem[]; message?: string; page?: number; totalPages?: number }> {
   try {
     const searchParams = new URLSearchParams();
@@ -42,6 +43,7 @@ export async function fetchTicketmasterEvents(params: {
     if (params.stateCode) searchParams.set('stateCode', params.stateCode);
     if (params.size) searchParams.set('size', params.size);
     if (params.page !== undefined) searchParams.set('page', String(params.page));
+    if (params.radius !== undefined) searchParams.set('radius', String(params.radius));
 
     const res = await fetch(`/api/ticketmaster/events?${searchParams.toString()}`);
     if (!res.ok) {
